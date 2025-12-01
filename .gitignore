@@ -1,0 +1,77 @@
+# ---- PYTHON ----
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# ---- DJANGO ----
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+
+# Django static & compiled files
+staticfiles/
+static/
+static_root/
+*collectstatic*/
+
+# ---- ENVIRONMENT VARIABLES ----
+.env
+.env.*
+*.env
+secrets.json
+
+# ---- EDITORS ----
+# VS Code
+.vscode/
+.code-workspace
+
+# PyCharm / JetBrains
+.idea/
+*.iml
+
+# ---- OS FILES ----
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ---- MISC ----
+*.bak
+*.tmp
+*.swp
+*.swo
+*.orig
