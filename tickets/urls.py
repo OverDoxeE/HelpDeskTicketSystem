@@ -5,6 +5,9 @@ from .views import (
     TicketRetrieveUpdateDestroyAPIView,
     CategoryListCreateAPIView,
     CategoryRetrieveUpdateDestroyAPIView,
+    CommentListCreateAPIView,
+    CommentRetrieveUpdateDestroyAPIView,
+    TicketChangeStatusAPIView,
 )
 
 urlpatterns = [
@@ -13,4 +16,7 @@ urlpatterns = [
     path("tickets/<int:pk>/", TicketRetrieveUpdateDestroyAPIView.as_view(), name="ticket-detail"),
     path("categories/", CategoryListCreateAPIView.as_view(), name="category-list-create"),
     path("categories/<int:pk>/", CategoryRetrieveUpdateDestroyAPIView.as_view(), name="category-detail"),
+    path("tickets/<int:ticket_id>/comments/", CommentListCreateAPIView.as_view(), name="comment-list-create"),
+    path("comments/<int:pk>/", CommentRetrieveUpdateDestroyAPIView.as_view(), name="comment-detail"),
+    path("tickets/<int:pk>/status/", TicketChangeStatusAPIView.as_view(), name="ticket-change-status"),
 ]
