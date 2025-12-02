@@ -6,6 +6,8 @@ from django.shortcuts import get_object_or_404
 from .models import Ticket, Category, Comment
 from .serializers import TicketSerializer, CategorySerializer, CommentSerializer
 from .services import ChangeTicketStatusCommand
+from .filters import TicketFilter
+from .permissions import is_support_or_admin, IsTicketOwnerOrSupportOrAdmin
 
 class HealthCheckView(APIView):
     permission_classes = [AllowAny]
@@ -14,9 +16,21 @@ class HealthCheckView(APIView):
         return Response({"status": "ok"})
 
 class TicketListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Ticket.objects.select_related("created_by", "assigned_to", "category").all()
     serializer_class = TicketSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        base_qs = (
+            Ticket.objects
+            .select_related("created_by", "assigned_to", "category")
+            .order_by("-created_at")
+        )
+        filters = TicketFilter(self.request.query_params, self.request.user)
+        queryset = filters.apply(base_qs)
+        user = self.request.user
+        if is_support_or_admin(user):
+            return queryset
+        return queryset.filter(created_by=user)
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
@@ -24,7 +38,7 @@ class TicketListCreateAPIView(generics.ListCreateAPIView):
 class TicketRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Ticket.objects.select_related("created_by", "assigned_to", "category").all()
     serializer_class = TicketSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsTicketOwnerOrSupportOrAdmin]
 
 class CategoryListCreateAPIView(generics.ListCreateAPIView):
     queryset = Category.objects.all().order_by("name")
@@ -58,7 +72,7 @@ class CommentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
 class TicketChangeStatusAPIView(generics.UpdateAPIView):
     queryset = Ticket.objects.all()
     serializer_class = TicketSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsTicketOwnerOrSupportOrAdmin]
 
     def patch(self, request, pk):
         ticket = get_object_or_404(Ticket, pk=pk)
