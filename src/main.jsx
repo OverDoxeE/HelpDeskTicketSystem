@@ -1,6 +1,5 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from "./context/AuthContext";
 import LoginPage from "./pages/LoginPage";
@@ -12,8 +11,19 @@ import UserPanelPage from "./pages/UserPanelPage";
 import MainLayout from "./components/layout/MainLayout";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
+function LoginPage() {
+  return (
+    <div>
+      <h2>Login</h2>
+      <LoginForm onSubmit={() => {}} />
+    </div>
+  );
+}
+
+export default LoginPage;
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
     <AuthProvider>
       <BrowserRouter>
         <Routes>
@@ -30,5 +40,5 @@ createRoot(document.getElementById('root')).render(
         </Routes>
       </BrowserRouter>
     </AuthProvider>
-  </StrictMode>,
-)
+  </React.StrictMode>
+);
