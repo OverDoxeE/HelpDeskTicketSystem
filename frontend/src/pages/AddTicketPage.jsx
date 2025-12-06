@@ -4,7 +4,7 @@ function AddTicketPage() {
   return (
     <div>
       <h2>Add Ticket</h2>
-      {/* TicketForm component will go here */}
+      {/* TicketForm component will be integrated here */}
     </div>
   );
 }

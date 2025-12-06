@@ -1,7 +1,6 @@
 import React from 'react';
 
 function TicketForm({ onSubmit, initialData }) {
-  // ...form fields and logic later...
   return (
     <form onSubmit={onSubmit}>
       <div>
