@@ -2,7 +2,7 @@ import React from 'react';
 
 function TicketList({ tickets }) {
   if (!tickets || tickets.length === 0) {
-    return <div>No tickets yet.</div>;
+    return <div>No tickets to display.</div>;
   }
 
   return (

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getTickets } from '../api/ticketsApi';
+import { fetchTickets } from '../api/ticketsApi';
 import TicketList from '../components/tickets/TicketList';
 
 function TicketListPage() {
@@ -8,24 +8,32 @@ function TicketListPage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    getTickets()
+    setLoading(true);
+    fetchTickets()
       .then(data => {
         setTickets(data);
-        setLoading(false);
+        setError(null);
       })
       .catch(err => {
-        setError('Failed to load tickets.');
+        setError('Failed to load tickets');
+      })
+      .finally(() => {
         setLoading(false);
       });
   }, []);
 
-  if (loading) return <div>Loading tickets...</div>;
-  if (error) return <div>{error}</div>;
-
   return (
     <div>
-      <h2>Tickets</h2>
-      <TicketList tickets={tickets} />
+      <h1>Tickets</h1>
+      {loading ? (
+        <p>Loading tickets...</p>
+      ) : error ? (
+        <p className="error">{error}</p>
+      ) : tickets.length === 0 ? (
+        <p>No tickets yet.</p>
+      ) : (
+        <TicketList tickets={tickets} />
+      )}
     </div>
   );
 }
