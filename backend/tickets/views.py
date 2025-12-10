@@ -8,6 +8,8 @@ from .models import Ticket, Category, Comment
 from .serializers import TicketSerializer, CategorySerializer, CommentSerializer
 from .services import ChangeTicketStatusCommand
 from .filters import TicketFilter
+from django.db.models import Count, Q
+from django.utils import timezone
 
 class HealthCheckView(APIView):
     permission_classes = [AllowAny]
@@ -107,3 +109,45 @@ class TicketChangeStatusAPIView(generics.UpdateAPIView):
         updated_ticket = command.execute()
         serializer = TicketSerializer(updated_ticket)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class TicketStatsAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        if not is_support_or_admin(user):
+            return Response(
+                {"detail": "You do not have permission to view stats."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        now = timezone.now()
+        qs = Ticket.objects.all()
+        total = qs.count()
+        by_status = qs.values("status").annotate(count=Count("id")).order_by("status")
+        by_priority = qs.values("priority").annotate(count=Count("id")).order_by("priority")
+
+        open_tickets = qs.filter(status="OPEN").count()
+        in_progress_tickets = qs.filter(status="IN_PROGRESS").count()
+        resolved_tickets = qs.filter(status="RESOLVED").count()
+        closed_tickets = qs.filter(status="CLOSED").count()
+
+        overdue_tickets = qs.filter(
+            due_date__isnull=False,
+            due_date__lt=now.date(),
+        ).exclude(status__in=["RESOLVED", "CLOSED"]).count()
+
+        data = {
+            "total": total,
+            "by_status": list(by_status),
+            "by_priority": list(by_priority),
+            "counters": {
+                "open": open_tickets,
+                "in_progress": in_progress_tickets,
+                "resolved": resolved_tickets,
+                "closed": closed_tickets,
+                "overdue": overdue_tickets,
+            },
+        }
+
+        return Response(data, status=status.HTTP_200_OK)

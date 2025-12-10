@@ -8,6 +8,7 @@ from .views import (
     CommentListCreateAPIView,
     CommentRetrieveUpdateDestroyAPIView,
     TicketChangeStatusAPIView,
+    TicketStatsAPIView,
 )
 
 urlpatterns = [
@@ -19,4 +20,5 @@ urlpatterns = [
     path("tickets/<int:ticket_id>/comments/", CommentListCreateAPIView.as_view(), name="comment-list-create"),
     path("comments/<int:pk>/", CommentRetrieveUpdateDestroyAPIView.as_view(), name="comment-detail"),
     path("tickets/<int:pk>/status/", TicketChangeStatusAPIView.as_view(), name="ticket-change-status"),
+    path("tickets/stats/", TicketStatsAPIView.as_view(), name="ticket-stats"),
 ]
