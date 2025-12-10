@@ -54,6 +54,14 @@ class Ticket(models.Model):
         return f"[{self.status}] {self.title}"
 
 class Comment(models.Model):
+    VISIBILITY_PUBLIC = "PUBLIC"
+    VISIBILITY_INTERNAL = "INTERNAL"
+
+    VISIBILITY_CHOICES = [
+        (VISIBILITY_PUBLIC, "Public"),
+        (VISIBILITY_INTERNAL, "Internal"),
+    ]
+
     ticket = models.ForeignKey(
         Ticket,
         on_delete=models.CASCADE,
@@ -65,6 +73,11 @@ class Comment(models.Model):
         related_name="ticket_comments"
     )
     message = models.TextField()
+    visibility = models.CharField(
+        max_length=20,
+        choices=VISIBILITY_CHOICES,
+        default=VISIBILITY_PUBLIC,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

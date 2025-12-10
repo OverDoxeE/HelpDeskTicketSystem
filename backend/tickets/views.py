@@ -3,11 +3,11 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework import generics, permissions, status
 from django.shortcuts import get_object_or_404
+from .permissions import is_support_or_admin, is_admin_user, IsTicketOwnerOrSupportOrAdmin, CanManageComment
 from .models import Ticket, Category, Comment
 from .serializers import TicketSerializer, CategorySerializer, CommentSerializer
 from .services import ChangeTicketStatusCommand
 from .filters import TicketFilter
-from .permissions import is_support_or_admin, IsTicketOwnerOrSupportOrAdmin
 
 class HealthCheckView(APIView):
     permission_classes = [AllowAny]
@@ -56,18 +56,35 @@ class CommentListCreateAPIView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         ticket_id = self.kwargs.get("ticket_id")
-        get_object_or_404(Ticket, pk=ticket_id)
-        return Comment.objects.filter(ticket_id=ticket_id).select_related("ticket", "author").order_by("-created_at")
+        ticket = get_object_or_404(Ticket, pk=ticket_id)
+
+        qs = Comment.objects.filter(ticket=ticket).select_related("ticket", "author").order_by("-created_at")
+
+        user = self.request.user
+        if is_support_or_admin(user):
+            return qs
+        return qs.filter(visibility=Comment.VISIBILITY_PUBLIC)
 
     def perform_create(self, serializer):
         ticket_id = self.kwargs.get("ticket_id")
         ticket = get_object_or_404(Ticket, pk=ticket_id)
-        serializer.save(author=self.request.user, ticket=ticket)
+
+        user = self.request.user
+        visibility = serializer.validated_data.get("visibility", Comment.VISIBILITY_PUBLIC)
+
+        if not is_support_or_admin(user):
+            visibility = Comment.VISIBILITY_PUBLIC
+
+        serializer.save(
+            author=user,
+            ticket=ticket,
+            visibility=visibility,
+        )
 
 class CommentRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Comment.objects.select_related("ticket", "author").all()
     serializer_class = CommentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, CanManageComment]
 
 class TicketChangeStatusAPIView(generics.UpdateAPIView):
     queryset = Ticket.objects.all()
