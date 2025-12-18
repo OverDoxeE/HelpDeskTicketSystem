@@ -1,4 +1,7 @@
+
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
+from django.utils import timezone
 from .models import Category, Ticket, Comment
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -6,6 +9,7 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = ["id", "name", "description", "created_at"]
         read_only_fields = ["id", "created_at"]
+
 
 class TicketSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(
@@ -37,8 +41,36 @@ class TicketSerializer(serializers.ModelSerializer):
             "assigned_to",
         ]
 
+    def validate_title(self, value):
+        if len(value.strip()) < 5:
+            raise ValidationError("Title must be at least 5 characters long.")
+        return value
+
+    def validate_description(self, value):
+        if len(value.strip()) < 10:
+            raise ValidationError("Description must be at least 10 characters long.")
+        return value
+
+    def validate_due_date(self, value):
+        if value and value < timezone.now().date():
+            raise ValidationError("Due date cannot be in the past.")
+        return value
+
+    def validate_status(self, value):
+        # Block reopening closed tickets
+        if self.instance is not None:
+            if self.instance.status == "CLOSED" and value != "CLOSED":
+                raise ValidationError("Closed ticket cannot be reopened.")
+        return value
+
+
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ["id", "ticket", "author", "message", "visibility", "created_at"]
         read_only_fields = ["id", "created_at", "author", "ticket"]
+
+    def validate_message(self, value):
+        if len(value.strip()) < 3:
+            raise ValidationError("Comment message is too short.")
+        return value
