@@ -1,11 +1,26 @@
-import axios from 'axios';
+// frontend/src/api/ticketsApi.js
+import axios from "axios";
+
+const api = axios.create({
+  baseURL: "http://127.0.0.1:8000/api",
+});
 
 export async function fetchTickets() {
-  const response = await axios.get('/api/tickets/');
-  return response.data;
+  try {
+    const response = await api.get("/tickets/");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching tickets:", error);
+    throw error;
+  }
 }
 
 export async function fetchTicketById(id) {
-  const response = await axios.get(`/api/tickets/${id}/`);
-  return response.data;
+  try {
+    const response = await api.get(`/tickets/${id}/`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching ticket ${id}:`, error);
+    throw error;
+  }
 }

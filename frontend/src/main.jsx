@@ -1,9 +1,12 @@
+// frontend/src/main.jsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+
 import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './components/layout/ProtectedRoute';
+
 import LoginPage from './pages/LoginPage';
 import TicketListPage from './pages/TicketListPage';
 import TicketDetailsPage from './pages/TicketDetailsPage';
@@ -15,8 +18,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/* Public */}
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={<Navigate to="/tickets" />} />
+
+          {/* Protected: /tickets */}
           <Route
             path="/tickets"
             element={
@@ -27,6 +32,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               </ProtectedRoute>
             }
           />
+
+          {/* Protected: /tickets/:id */}
           <Route
             path="/tickets/:id"
             element={
@@ -37,6 +44,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               </ProtectedRoute>
             }
           />
+
+          {/* Protected: /tickets/add */}
           <Route
             path="/tickets/add"
             element={
@@ -47,6 +56,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               </ProtectedRoute>
             }
           />
+
+          {/* Protected: /user */}
           <Route
             path="/user"
             element={
@@ -57,6 +68,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               </ProtectedRoute>
             }
           />
+
+          {/* Deafult transfer /tickets */}
+          <Route path="/" element={<Navigate to="/tickets" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
