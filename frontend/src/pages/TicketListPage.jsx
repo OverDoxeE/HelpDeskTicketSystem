@@ -1,7 +1,7 @@
 // frontend/src/pages/TicketListPage.jsx
 import React, { useEffect, useState } from "react";
 import TicketList from "../components/tickets/TicketList";
-import { fetchTickets } from "../api/ticketsApi";
+import { fetchTickets, subscribeTickets } from "../api/ticketsApi";
 
 function TicketListPage() {
   const [tickets, setTickets] = useState([]);
@@ -24,6 +24,12 @@ function TicketListPage() {
     };
 
     loadTickets();
+
+    const unsubscribe = subscribeTickets(() => {
+      loadTickets();
+    });
+
+    return unsubscribe;
   }, []);
 
   if (loading) return <p>Loading tickets…</p>;

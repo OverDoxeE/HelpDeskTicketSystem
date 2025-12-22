@@ -37,7 +37,6 @@ function Navbar() {
               Tickets
             </NavLink>
 
-            {/* tu MUSI być /tickets/add jeśli tak masz w main.jsx */}
             <NavLink to="/tickets/add" style={linkStyle}>
               New ticket
             </NavLink>
