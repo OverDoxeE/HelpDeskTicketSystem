@@ -1,26 +1,46 @@
 // frontend/src/api/ticketsApi.js
-import axios from "axios";
 
-const api = axios.create({
-  baseURL: "http://127.0.0.1:8000/api",
-});
+let tickets = [
+  { id: 1, title: 'Printer not working', status: 'open', description: 'Office printer is jammed.' },
+  { id: 2, title: 'Cannot login to VPN', status: 'in_progress', description: 'VPN client throws an error.' },
+  { id: 3, title: 'Broken keyboard', status: 'closed', description: 'Several keys are not working.' },
+];
 
 export async function fetchTickets() {
-  try {
-    const response = await api.get("/tickets/");
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching tickets:", error);
-    throw error;
-  }
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  return tickets;
 }
 
 export async function fetchTicketById(id) {
-  try {
-    const response = await api.get(`/tickets/${id}/`);
-    return response.data;
-  } catch (error) {
-    console.error(`Error fetching ticket ${id}:`, error);
-    throw error;
-  }
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  return tickets.find((t) => t.id === Number(id)) || null;
+}
+
+export async function createTicket(ticketData) {
+  await new Promise((resolve) => setTimeout(resolve, 200));
+
+  const newId = tickets.length > 0 ? Math.max(...tickets.map((t) => t.id)) + 1 : 1;
+
+  const newTicket = {
+    id: newId,
+    title: ticketData.title,
+    description: ticketData.description || '',
+    status: 'open',
+  };
+
+  tickets = [...tickets, newTicket];
+
+  console.log('Creating ticket (fake API):', newTicket);
+
+  return newTicket;
+}
+
+export async function updateTicketStatus(id, newStatus) {
+  await new Promise((resolve) => setTimeout(resolve, 200));
+
+  const idx = tickets.findIndex((t) => t.id === Number(id));
+  if (idx === -1) return null;
+
+  tickets[idx] = { ...tickets[idx], status: newStatus };
+  return tickets[idx];
 }

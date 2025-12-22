@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { fetchTickets } from '../api/ticketsApi';
-import TicketList from '../components/tickets/TicketList';
+// frontend/src/pages/TicketListPage.jsx
+import React, { useEffect, useState } from "react";
+import TicketList from "../components/tickets/TicketList";
+import { fetchTickets } from "../api/ticketsApi";
 
 function TicketListPage() {
   const [tickets, setTickets] = useState([]);
@@ -8,32 +9,30 @@ function TicketListPage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
-    fetchTickets()
-      .then(data => {
+    const loadTickets = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchTickets();
         setTickets(data);
         setError(null);
-      })
-      .catch(err => {
-        setError('Failed to load tickets');
-      })
-      .finally(() => {
+      } catch (err) {
+        console.error("Error fetching tickets:", err);
+        setError("Failed to load tickets");
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    loadTickets();
   }, []);
+
+  if (loading) return <p>Loading tickets…</p>;
+  if (error) return <p style={{ color: "red" }}>{error}</p>;
 
   return (
     <div>
       <h1>Tickets</h1>
-      {loading ? (
-        <p>Loading tickets...</p>
-      ) : error ? (
-        <p className="error">{error}</p>
-      ) : tickets.length === 0 ? (
-        <p>No tickets yet.</p>
-      ) : (
-        <TicketList tickets={tickets} />
-      )}
+      <TicketList tickets={tickets} />
     </div>
   );
 }
