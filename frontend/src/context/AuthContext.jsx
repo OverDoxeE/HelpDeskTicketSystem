@@ -1,59 +1,117 @@
 // frontend/src/context/AuthContext.jsx
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import api, { setAuthToken, clearAuthToken } from "../api/httpClient";
+import { loginRequest, logoutRequest, meRequest } from "../api/authApi";
 
 const AuthContext = createContext(null);
-const STORAGE_KEY = "hd_auth";
 
-function readStorage() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return { isAuthenticated: false, user: null };
-  try {
-    const saved = JSON.parse(raw);
-    return {
-      isAuthenticated: !!saved?.isAuthenticated,
-      user: saved?.user ?? null,
-    };
-  } catch {
-    localStorage.removeItem(STORAGE_KEY);
-    return { isAuthenticated: false, user: null };
-  }
-}
+const LS_TOKEN = "auth_token";
+const LS_USER = "auth_user";
 
 export function AuthProvider({ children }) {
-  const initial = readStorage();
-  const [isAuthenticated, setIsAuthenticated] = useState(initial.isAuthenticated);
-  const [user, setUser] = useState(initial.user);
+  const [token, setToken] = useState(() => localStorage.getItem(LS_TOKEN) || null);
+  const [user, setUser] = useState(() => {
+    const raw = localStorage.getItem(LS_USER);
+    return raw ? JSON.parse(raw) : null;
+  });
+  const [loading, setLoading] = useState(true);
 
-  const login = async (email, password) => {
-    await new Promise((r) => setTimeout(r, 200));
+  useEffect(() => {
+    let mounted = true;
 
-    const loggedUser = { email };
-    setIsAuthenticated(true);
-    setUser(loggedUser);
+    const init = async () => {
+      try {
+        if (token) {
+          setAuthToken(token);
 
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ isAuthenticated: true, user: loggedUser })
+          const data = await meRequest();
+          if (mounted && data?.user) {
+            setUser(data.user);
+            localStorage.setItem(LS_USER, JSON.stringify(data.user));
+          }
+        }
+      } catch (e) {
+        // token zły / wygasł / user usunięty
+        if (mounted) {
+          doLocalLogout();
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    init();
+
+    return () => {
+      mounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const id = api.interceptors.response.use(
+      (res) => res,
+      (err) => {
+        if (err?.response?.status === 401) {
+          doLocalLogout();
+        }
+        return Promise.reject(err);
+      }
     );
 
-    return loggedUser;
-  };
+    return () => api.interceptors.response.eject(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const logout = () => {
-    setIsAuthenticated(false);
+  const doLocalLogout = () => {
     setUser(null);
-    localStorage.removeItem(STORAGE_KEY);
+    setToken(null);
+    localStorage.removeItem(LS_TOKEN);
+    localStorage.removeItem(LS_USER);
+    clearAuthToken();
   };
 
-  return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
-      {children}
-    </AuthContext.Provider>
+  const login = async (email, password) => {
+    const data = await loginRequest({ email, password });
+
+    if (!data?.token || !data?.user) {
+      throw new Error("Invalid login response");
+    }
+
+    setToken(data.token);
+    setUser(data.user);
+
+    localStorage.setItem(LS_TOKEN, data.token);
+    localStorage.setItem(LS_USER, JSON.stringify(data.user));
+
+    setAuthToken(data.token);
+  };
+
+  const logout = async () => {
+    try {
+      await logoutRequest();
+    } catch (e) {
+      // ignorujemy błąd (np. token już nieważny)
+    } finally {
+      doLocalLogout();
+    }
+  };
+
+  const value = useMemo(
+    () => ({
+      user,
+      token,
+      loading,
+      isAuthenticated: !!user && !!token,
+      login,
+      logout,
+    }),
+    [user, token, loading]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
-  return ctx;
+  return useContext(AuthContext);
 }

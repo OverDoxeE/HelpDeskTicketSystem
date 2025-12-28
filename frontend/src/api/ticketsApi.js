@@ -1,75 +1,34 @@
 // frontend/src/api/ticketsApi.js
+import api from "./httpClient";
 
-let tickets = [
-  { id: 1, title: "Printer not working", status: "open", description: "Office printer is jammed." },
-  { id: 2, title: "Cannot login to VPN", status: "in_progress", description: "VPN client throws an error." },
-  { id: 3, title: "Broken keyboard", status: "closed", description: "Several keys are not working." },
-];
-
-const listeners = new Set();
-
-export function subscribeTickets(cb) {
-  listeners.add(cb);
-  return () => listeners.delete(cb);
-}
-
-function notifyTicketsChanged() {
-  for (const cb of listeners) cb();
-}
-
+// GET /api/tickets/
 export async function fetchTickets() {
-  await new Promise((resolve) => setTimeout(resolve, 200));
-  return tickets;
+  const res = await api.get("/tickets/");
+  return res.data;
 }
 
+// GET /api/tickets/{id}/
 export async function fetchTicketById(id) {
-  await new Promise((resolve) => setTimeout(resolve, 200));
-  return tickets.find((t) => t.id === Number(id)) || null;
+  const res = await api.get(`/tickets/${id}/`);
+  return res.data;
 }
 
+// POST /api/tickets/
 export async function createTicket(ticketData) {
-  await new Promise((resolve) => setTimeout(resolve, 200));
-
-  const newId = tickets.length > 0 ? Math.max(...tickets.map((t) => t.id)) + 1 : 1;
-
-  const newTicket = {
-    id: newId,
-    title: ticketData.title,
-    description: ticketData.description || "",
-    status: "open",
-  };
-
-  tickets = [...tickets, newTicket];
-
-  console.log("Creating ticket (fake API):", newTicket);
-
-  notifyTicketsChanged();
-
-  return newTicket;
+  // ticketData: { title, description, ... }
+  const res = await api.post("/tickets/", ticketData);
+  return res.data;
 }
 
+// PATCH /api/tickets/{id}/status/
 export async function updateTicketStatus(id, newStatus) {
-  await new Promise((resolve) => setTimeout(resolve, 200));
-
-  const idx = tickets.findIndex((t) => t.id === Number(id));
-  if (idx === -1) return null;
-
-  tickets[idx] = { ...tickets[idx], status: newStatus };
-
-  notifyTicketsChanged();
-
-  return tickets[idx];
+  // newStatus: "OPEN" | "IN_PROGRESS" | "RESOLVED"
+  const res = await api.patch(`/tickets/${id}/status/`, { status: newStatus });
+  return res.data;
 }
 
+// DELETE /api/tickets/{id}/
 export async function deleteTicket(id) {
-  await new Promise((resolve) => setTimeout(resolve, 200));
-
-  const before = tickets.length;
-  tickets = tickets.filter((t) => t.id !== Number(id));
-
-  if (tickets.length === before) return false;
-
-  notifyTicketsChanged();
-
-  return true;
+  const res = await api.delete(`/tickets/${id}/`);
+  return res.data;
 }

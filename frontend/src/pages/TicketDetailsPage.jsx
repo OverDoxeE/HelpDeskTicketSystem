@@ -1,41 +1,40 @@
 // frontend/src/pages/TicketDetailsPage.jsx
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { fetchTicketById, updateTicketStatus, deleteTicket } from "../api/ticketsApi";
+import { deleteTicket, fetchTicketById, updateTicketStatus } from "../api/ticketsApi";
 import { useUi } from "../context/UiContext";
+
+function formatStatus(s) {
+  if (!s) return "-";
+  return s.replaceAll("_", " ").toLowerCase();
+}
 
 function TicketDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { showFlash } = useUi();
+  const { showMessage } = useUi();
 
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
 
+  const load = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetchTicketById(id);
+      setTicket(data);
+    } catch (e) {
+      console.error(e);
+      setError("Failed to load ticket");
+      setTicket(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const data = await fetchTicketById(id);
-        if (!data) {
-          setError("Ticket not found");
-          setTicket(null);
-          return;
-        }
-
-        setTicket(data);
-      } catch (e) {
-        console.error(e);
-        setError("Failed to load ticket");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     load();
   }, [id]);
 
@@ -45,43 +44,29 @@ function TicketDetailsPage() {
       setError(null);
 
       const updated = await updateTicketStatus(id, newStatus);
-      if (!updated) {
-        setError("Ticket not found");
-        showFlash("error", "Ticket not found");
-        return;
-      }
-
       setTicket(updated);
-      showFlash("success", `Status updated: ${newStatus}`);
+      showMessage(`Status updated: ${formatStatus(updated.status)}`);
     } catch (e) {
       console.error(e);
       setError("Failed to update status");
-      showFlash("error", "Failed to update status");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("Delete this ticket?")) return;
+    const ok = confirm("Delete this ticket?");
+    if (!ok) return;
 
     try {
       setSaving(true);
       setError(null);
-
-      const ok = await deleteTicket(id);
-      if (!ok) {
-        setError("Ticket not found");
-        showFlash("error", "Ticket not found");
-        return;
-      }
-
-      showFlash("success", "Ticket deleted");
+      await deleteTicket(id);
+      showMessage("Ticket deleted");
       navigate("/tickets");
     } catch (e) {
       console.error(e);
       setError("Failed to delete ticket");
-      showFlash("error", "Failed to delete ticket");
     } finally {
       setSaving(false);
     }
@@ -93,42 +78,37 @@ function TicketDetailsPage() {
     <div>
       <h1>Ticket Details</h1>
 
-      <p style={{ marginBottom: "12px" }}>
+      <p style={{ marginBottom: 12 }}>
         <Link to="/tickets">← Back to tickets</Link>
       </p>
 
-      {error && (
-        <p style={{ color: "crimson", marginBottom: "12px" }}>{error}</p>
-      )}
+      {error && <p style={{ color: "crimson", marginBottom: 12 }}>{error}</p>}
 
       {!ticket ? (
         <p>No ticket.</p>
       ) : (
-        <div style={{ border: "1px solid #ddd", padding: "12px", maxWidth: 600 }}>
+        <div style={{ border: "1px solid #ddd", padding: 12, maxWidth: 650 }}>
           <p><b>ID:</b> {ticket.id}</p>
           <p><b>Title:</b> {ticket.title}</p>
           <p><b>Description:</b> {ticket.description || "-"}</p>
-          <p><b>Status:</b> {ticket.status}</p>
+          <p><b>Status:</b> {formatStatus(ticket.status)}</p>
 
-          <div style={{ marginTop: "12px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            <button onClick={() => handleChangeStatus("open")} disabled={saving}>
+          <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={() => handleChangeStatus("OPEN")} disabled={saving}>
               Set OPEN
             </button>
-            <button onClick={() => handleChangeStatus("in_progress")} disabled={saving}>
+            <button onClick={() => handleChangeStatus("IN_PROGRESS")} disabled={saving}>
               Set IN PROGRESS
             </button>
-            <button onClick={() => handleChangeStatus("closed")} disabled={saving}>
-              Set CLOSED
+            <button onClick={() => handleChangeStatus("RESOLVED")} disabled={saving}>
+              Set RESOLVED
             </button>
-
-            <span style={{ width: "12px" }} />
-
-            <button onClick={handleDelete} disabled={saving}>
+            <button onClick={handleDelete} disabled={saving} style={{ marginLeft: 12 }}>
               Delete
             </button>
           </div>
 
-          {saving && <p style={{ marginTop: "8px" }}>Saving...</p>}
+          {saving && <p style={{ marginTop: 8 }}>Saving...</p>}
         </div>
       )}
     </div>

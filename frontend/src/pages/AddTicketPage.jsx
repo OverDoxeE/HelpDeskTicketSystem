@@ -5,37 +5,31 @@ import { createTicket } from "../api/ticketsApi";
 import { useUi } from "../context/UiContext";
 
 function AddTicketPage() {
+  const navigate = useNavigate();
+  const { showMessage } = useUi();
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [error, setError] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
 
-  const navigate = useNavigate();
-  const { showFlash } = useUi();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-
-    if (!title.trim()) {
-      setError("Title is required");
-      showFlash("error", "Title is required");
-      return;
-    }
 
     try {
-      setSubmitting(true);
+      setSaving(true);
+      setError(null);
 
       const created = await createTicket({ title, description });
-      showFlash("success", `Ticket created (#${created.id})`);
+      showMessage("Ticket created successfully");
 
       navigate(`/tickets/${created.id}`);
     } catch (err) {
       console.error(err);
       setError("Failed to create ticket");
-      showFlash("error", "Failed to create ticket");
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
   };
 
@@ -43,35 +37,35 @@ function AddTicketPage() {
     <div>
       <h1>New ticket</h1>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p style={{ color: "crimson" }}>{error}</p>}
 
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "8px" }}>
+      <form onSubmit={handleSubmit} style={{ maxWidth: 520 }}>
+        <div style={{ marginBottom: 10 }}>
           <label>
-            Title:{" "}
+            Title
             <input
-              type="text"
+              style={{ display: "block", width: "100%", padding: 8 }}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
+              minLength={3}
             />
           </label>
         </div>
 
-        <div style={{ marginBottom: "8px" }}>
+        <div style={{ marginBottom: 10 }}>
           <label>
-            Description:{" "}
+            Description
             <textarea
+              style={{ display: "block", width: "100%", padding: 8, minHeight: 120 }}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              cols={40}
             />
           </label>
         </div>
 
-        <button type="submit" disabled={submitting}>
-          {submitting ? "Creating…" : "Create"}
+        <button disabled={saving} type="submit">
+          {saving ? "Creating…" : "Create"}
         </button>
       </form>
     </div>
