@@ -1,29 +1,22 @@
-// frontend/src/pages/AddTicketPage.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createTicket } from "../api/ticketsApi";
-import { useUi } from "../context/UiContext";
 
 function AddTicketPage() {
-  const navigate = useNavigate();
-  const { showMessage } = useUi();
-
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
 
     try {
       setSaving(true);
-      setError(null);
-
       const created = await createTicket({ title, description });
-      showMessage("Ticket created successfully");
-
       navigate(`/tickets/${created.id}`);
     } catch (err) {
       console.error(err);
@@ -39,33 +32,35 @@ function AddTicketPage() {
 
       {error && <p style={{ color: "crimson" }}>{error}</p>}
 
-      <form onSubmit={handleSubmit} style={{ maxWidth: 520 }}>
-        <div style={{ marginBottom: 10 }}>
+      <form onSubmit={handleSubmit}>
+        <div style={{ marginBottom: 12 }}>
           <label>
             Title
+            <br />
             <input
-              style={{ display: "block", width: "100%", padding: 8 }}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              minLength={3}
+              style={{ width: 400 }}
             />
           </label>
         </div>
 
-        <div style={{ marginBottom: 10 }}>
+        <div style={{ marginBottom: 12 }}>
           <label>
             Description
+            <br />
             <textarea
-              style={{ display: "block", width: "100%", padding: 8, minHeight: 120 }}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              rows={6}
+              style={{ width: 400 }}
             />
           </label>
         </div>
 
-        <button disabled={saving} type="submit">
-          {saving ? "Creating…" : "Create"}
+        <button type="submit" disabled={saving}>
+          Create
         </button>
       </form>
     </div>

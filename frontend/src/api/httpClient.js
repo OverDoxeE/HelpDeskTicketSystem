@@ -1,13 +1,8 @@
-// frontend/src/api/httpClient.js
 import axios from "axios";
 
-/**
- * VITE_API_BASE_URL=http://127.0.0.1:8000
- */
-const RAW_BASE =
-  import.meta.env.VITE_API_BASE_URL?.trim() || "http://127.0.0.1:8000";
-
-const BASE = RAW_BASE.endsWith("/") ? RAW_BASE.slice(0, -1) : RAW_BASE;
+// NOTE: Keep this aligned with Django.
+// In your backend settings/urls, API is exposed under /api/...
+const BASE = "http://127.0.0.1:8000";
 
 const api = axios.create({
   baseURL: `${BASE}/api`,
@@ -16,14 +11,36 @@ const api = axios.create({
   },
 });
 
+/**
+ * Sets or clears the Authorization header for future requests.
+ * Backend uses DRF TokenAuthentication => `Authorization: Token <key>`
+ */
 export function setAuthToken(token) {
   if (token) {
     api.defaults.headers.common.Authorization = `Token ${token}`;
+  } else {
+    delete api.defaults.headers.common.Authorization;
   }
 }
 
-export function clearAuthToken() {
-  delete api.defaults.headers.common.Authorization;
+try {
+  const bootToken = localStorage.getItem("authToken");
+  if (bootToken) setAuthToken(bootToken);
+} catch {
+  // ignore (e.g. SSR)
 }
+
+api.interceptors.request.use(
+  (config) => {
+    try {
+      const t = localStorage.getItem("authToken");
+      if (t) config.headers.Authorization = `Token ${t}`;
+    } catch {
+      // ignore
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 export default api;

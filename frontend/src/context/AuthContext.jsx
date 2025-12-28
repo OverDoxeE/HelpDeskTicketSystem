@@ -1,117 +1,96 @@
-// frontend/src/context/AuthContext.jsx
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import api, { setAuthToken, clearAuthToken } from "../api/httpClient";
-import { loginRequest, logoutRequest, meRequest } from "../api/authApi";
+import api, { setAuthToken } from "../api/httpClient";
 
 const AuthContext = createContext(null);
 
-const LS_TOKEN = "auth_token";
-const LS_USER = "auth_user";
-
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => localStorage.getItem(LS_TOKEN) || null);
+  const [token, setToken] = useState(() => localStorage.getItem("authToken") || null);
   const [user, setUser] = useState(() => {
-    const raw = localStorage.getItem(LS_USER);
-    return raw ? JSON.parse(raw) : null;
+    try {
+      const raw = localStorage.getItem("authUser");
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
   });
   const [loading, setLoading] = useState(true);
 
+  // bootstrap token -> axios
   useEffect(() => {
-    let mounted = true;
+    setAuthToken(token);
+  }, [token]);
 
+  // on refresh: verify token by calling /auth/me/
+  useEffect(() => {
     const init = async () => {
+      if (!token) {
+        setLoading(false);
+        return;
+      }
       try {
-        if (token) {
-          setAuthToken(token);
-
-          const data = await meRequest();
-          if (mounted && data?.user) {
-            setUser(data.user);
-            localStorage.setItem(LS_USER, JSON.stringify(data.user));
-          }
-        }
+        const res = await api.get("/auth/me/");
+        setUser(res.data?.user || null);
       } catch (e) {
-        // token zły / wygasł / user usunięty
-        if (mounted) {
-          doLocalLogout();
-        }
+        // invalid token
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("authUser");
+        setToken(null);
+        setUser(null);
+        setAuthToken(null);
       } finally {
-        if (mounted) setLoading(false);
+        setLoading(false);
       }
     };
-
     init();
-
-    return () => {
-      mounted = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const id = api.interceptors.response.use(
-      (res) => res,
-      (err) => {
-        if (err?.response?.status === 401) {
-          doLocalLogout();
-        }
-        return Promise.reject(err);
-      }
-    );
-
-    return () => api.interceptors.response.eject(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const doLocalLogout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem(LS_TOKEN);
-    localStorage.removeItem(LS_USER);
-    clearAuthToken();
-  };
+  }, []); // run once
 
   const login = async (email, password) => {
-    const data = await loginRequest({ email, password });
+    const res = await api.post("/auth/login/", { email, password });
+    const t = res.data?.token;
+    const u = res.data?.user;
 
-    if (!data?.token || !data?.user) {
-      throw new Error("Invalid login response");
-    }
+    if (!t) throw new Error("No token returned");
 
-    setToken(data.token);
-    setUser(data.user);
+    localStorage.setItem("authToken", t);
+    if (u) localStorage.setItem("authUser", JSON.stringify(u));
 
-    localStorage.setItem(LS_TOKEN, data.token);
-    localStorage.setItem(LS_USER, JSON.stringify(data.user));
+    setToken(t);
+    setUser(u || null);
+    setAuthToken(t);
 
-    setAuthToken(data.token);
+    return { token: t, user: u };
   };
 
   const logout = async () => {
     try {
-      await logoutRequest();
-    } catch (e) {
-      // ignorujemy błąd (np. token już nieważny)
-    } finally {
-      doLocalLogout();
+      await api.post("/auth/logout/");
+    } catch {
+      // ignore
     }
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("authUser");
+    setToken(null);
+    setUser(null);
+    setAuthToken(null);
   };
 
   const value = useMemo(
     () => ({
-      user,
       token,
+      user,
+      isAuthenticated: !!token,
       loading,
-      isAuthenticated: !!user && !!token,
       login,
       logout,
     }),
-    [user, token, loading]
+    [token, user, loading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
+  return ctx;
 }

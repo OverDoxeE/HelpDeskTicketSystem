@@ -1,4 +1,3 @@
-// frontend/src/pages/TicketListPage.jsx
 import React, { useEffect, useState } from "react";
 import TicketList from "../components/tickets/TicketList";
 import { fetchTickets } from "../api/ticketsApi";
@@ -11,9 +10,9 @@ function TicketListPage() {
   const loadTickets = async () => {
     try {
       setLoading(true);
-      setError(null);
       const data = await fetchTickets();
       setTickets(data);
+      setError(null);
     } catch (err) {
       console.error("Error fetching tickets:", err);
       setError("Failed to load tickets");
