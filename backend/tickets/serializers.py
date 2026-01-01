@@ -1,3 +1,22 @@
+from django.contrib.auth import get_user_model
+
+# Serializer for assigning ticket to a technician
+class TicketAssignSerializer(serializers.Serializer):
+    assigned_to = serializers.IntegerField(required=False, allow_null=True)
+
+    def validate_assigned_to(self, value):
+        if value is None:
+            return None
+        User = get_user_model()
+        try:
+            user = User.objects.get(pk=value)
+        except User.DoesNotExist:
+            raise ValidationError("User with this id does not exist.")
+        # Only allow assignment to technician or admin
+        from .permissions import is_support_or_admin
+        if not is_support_or_admin(user):
+            raise ValidationError("User is not a technician or admin.")
+        return value
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError

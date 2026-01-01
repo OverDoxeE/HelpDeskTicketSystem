@@ -5,7 +5,25 @@ from rest_framework import generics, permissions, status
 from django.shortcuts import get_object_or_404
 from .permissions import is_support_or_admin, is_admin_user, IsTicketOwnerOrSupportOrAdmin, CanManageComment
 from .models import Ticket, Category, Comment
-from .serializers import TicketSerializer, CategorySerializer, CommentSerializer
+from .serializers import TicketSerializer, CategorySerializer, CommentSerializer, UserBriefSerializer
+from django.contrib.auth import get_user_model
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
+
+# Technician = user in TECHNICIAN or ADMIN group, or is_staff/superuser
+class TechnicianListAPIView(generics.ListAPIView):
+    serializer_class = UserBriefSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if not is_support_or_admin(user):
+            raise PermissionDenied("Only support or admin can view technicians list.")
+        User = get_user_model()
+        # Technicians: users in TECHNICIAN or ADMIN group, or is_staff/superuser
+        return User.objects.filter(
+            Q(groups__name__in=["TECHNICIAN", "ADMIN"]) | Q(is_staff=True) | Q(is_superuser=True)
+        ).distinct().order_by("username")
 from .services import ChangeTicketStatusCommand
 from .filters import TicketFilter
 from django.db.models import Count, Q
