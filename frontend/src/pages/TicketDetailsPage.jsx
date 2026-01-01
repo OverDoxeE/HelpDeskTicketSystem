@@ -152,10 +152,12 @@ function TicketDetailsPage() {
             </span>
           </p>
           <p>
-            <b>Created by:</b> {formatUserBrief(ticket.created_by_user, ticket.created_by)}
+            <b>Created by:</b>{" "}
+            {formatUserBrief(ticket.created_by_user, ticket.created_by)}
           </p>
           <p>
-            <b>Assigned to:</b> {formatUserBrief(ticket.assigned_to_user, ticket.assigned_to)}
+            <b>Assigned to:</b>{" "}
+            {formatUserBrief(ticket.assigned_to_user, ticket.assigned_to)}
           </p>
 
           <div

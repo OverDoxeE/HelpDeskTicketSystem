@@ -91,7 +91,9 @@ function TicketsTable({ tickets, categories }) {
                 </span>
               </td>
               <td>{getCategoryName(ticket.category)}</td>
-              <td>{formatUserBrief(ticket.assigned_to_user, ticket.assigned_to)}</td>
+              <td>
+                {formatUserBrief(ticket.assigned_to_user, ticket.assigned_to)}
+              </td>
               <td>
                 {ticket.created_at
                   ? new Date(ticket.created_at).toLocaleString()
