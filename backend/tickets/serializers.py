@@ -3,6 +3,13 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from django.utils import timezone
 from .models import Category, Ticket, Comment
+from django.contrib.auth import get_user_model
+
+# Brief user serializer for displaying basic user info
+class UserBriefSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = ["id", "username", "email"]
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -11,12 +18,15 @@ class CategorySerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at"]
 
 
+
 class TicketSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(
         queryset=Category.objects.all(),
         allow_null=True,
         required=False,
     )
+    created_by_user = UserBriefSerializer(source="created_by", read_only=True)
+    assigned_to_user = UserBriefSerializer(source="assigned_to", read_only=True)
 
     class Meta:
         model = Ticket
@@ -29,7 +39,9 @@ class TicketSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "created_by",
+            "created_by_user",
             "assigned_to",
+            "assigned_to_user",
             "category",
             "due_date",
         ]

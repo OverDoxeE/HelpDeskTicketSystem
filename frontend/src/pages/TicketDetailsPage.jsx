@@ -7,6 +7,7 @@ import {
 } from "../api/ticketsApi";
 import { TICKET_STATUS, TICKET_STATUS_LABELS } from "../constants/ticketStatus";
 import "../styles/badges.css";
+import { formatUserBrief } from "../utils/formatUser";
 // Badge helpers
 function getStatusBadgeClass(status) {
   switch (status) {
@@ -149,6 +150,12 @@ function TicketDetailsPage() {
             <span className={getPriorityBadgeClass(ticket.priority)}>
               {ticket.priority}
             </span>
+          </p>
+          <p>
+            <b>Created by:</b> {formatUserBrief(ticket.created_by_user, ticket.created_by)}
+          </p>
+          <p>
+            <b>Assigned to:</b> {formatUserBrief(ticket.assigned_to_user, ticket.assigned_to)}
           </p>
 
           <div

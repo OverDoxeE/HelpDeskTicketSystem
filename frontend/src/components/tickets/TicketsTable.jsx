@@ -2,13 +2,18 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import "./ticketsTable.css";
 import "../../styles/badges.css";
+import { formatUserBrief } from "../../utils/formatUser";
+
+function formatStatusLabel(status) {
+  return status?.replaceAll("_", " ") ?? "";
+}
 
 function getStatusBadgeClass(status) {
   switch (status) {
     case "OPEN":
       return "badge badge--status-open";
     case "IN_PROGRESS":
-      return "badge badge--status-in_progress";
+      return "badge badge--status-in-progress";
     case "RESOLVED":
       return "badge badge--status-resolved";
     case "CLOSED":
@@ -30,21 +35,6 @@ function getPriorityBadgeClass(priority) {
       return "badge badge--priority-critical";
     default:
       return "badge";
-  }
-}
-
-function getStatusLabel(status) {
-  switch (status) {
-    case "OPEN":
-      return "OPEN";
-    case "IN_PROGRESS":
-      return "IN PROGRESS";
-    case "RESOLVED":
-      return "RESOLVED";
-    case "CLOSED":
-      return "CLOSED";
-    default:
-      return status;
   }
 }
 
@@ -92,7 +82,7 @@ function TicketsTable({ tickets, categories }) {
               </td>
               <td>
                 <span className={getStatusBadgeClass(ticket.status)}>
-                  {getStatusLabel(ticket.status)}
+                  {formatStatusLabel(ticket.status)}
                 </span>
               </td>
               <td>
@@ -101,7 +91,7 @@ function TicketsTable({ tickets, categories }) {
                 </span>
               </td>
               <td>{getCategoryName(ticket.category)}</td>
-              <td>{ticket.assigned_to || "Unassigned"}</td>
+              <td>{formatUserBrief(ticket.assigned_to_user, ticket.assigned_to)}</td>
               <td>
                 {ticket.created_at
                   ? new Date(ticket.created_at).toLocaleString()
