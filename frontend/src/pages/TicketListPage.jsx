@@ -1,28 +1,34 @@
 import React, { useEffect, useState } from "react";
-import TicketList from "../components/tickets/TicketList";
+import TicketsTable from "../components/tickets/TicketsTable";
 import { fetchTickets } from "../api/ticketsApi";
+import { fetchCategories } from "../api/categoriesApi";
 
 function TicketListPage() {
   const [tickets, setTickets] = useState([]);
+  const [categories, setCategories] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const loadTickets = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const data = await fetchTickets();
-      setTickets(data);
+      const [ticketsData, categoriesData] = await Promise.all([
+        fetchTickets(),
+        fetchCategories(),
+      ]);
+      setTickets(ticketsData);
+      setCategories(categoriesData);
       setError(null);
     } catch (err) {
-      console.error("Error fetching tickets:", err);
-      setError("Failed to load tickets");
+      console.error("Error fetching tickets or categories:", err);
+      setError("Failed to load tickets or categories");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadTickets();
+    loadData();
   }, []);
 
   if (loading) return <p>Loading tickets…</p>;
@@ -31,7 +37,7 @@ function TicketListPage() {
   return (
     <div>
       <h1>Tickets</h1>
-      <TicketList tickets={tickets} />
+      <TicketsTable tickets={tickets} categories={categories} />
     </div>
   );
 }
