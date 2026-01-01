@@ -1,9 +1,51 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import "./ticketsTable.css";
+import "../../styles/badges.css";
 
-function badge(text, type) {
-  return <span className={`badge badge-${type}`}>{text}</span>;
+function getStatusBadgeClass(status) {
+  switch (status) {
+    case "OPEN":
+      return "badge badge--status-open";
+    case "IN_PROGRESS":
+      return "badge badge--status-in_progress";
+    case "RESOLVED":
+      return "badge badge--status-resolved";
+    case "CLOSED":
+      return "badge badge--status-closed";
+    default:
+      return "badge";
+  }
+}
+
+function getPriorityBadgeClass(priority) {
+  switch (priority) {
+    case "LOW":
+      return "badge badge--priority-low";
+    case "MEDIUM":
+      return "badge badge--priority-medium";
+    case "HIGH":
+      return "badge badge--priority-high";
+    case "CRITICAL":
+      return "badge badge--priority-critical";
+    default:
+      return "badge";
+  }
+}
+
+function getStatusLabel(status) {
+  switch (status) {
+    case "OPEN":
+      return "OPEN";
+    case "IN_PROGRESS":
+      return "IN PROGRESS";
+    case "RESOLVED":
+      return "RESOLVED";
+    case "CLOSED":
+      return "CLOSED";
+    default:
+      return status;
+  }
 }
 
 function TicketsTable({ tickets, categories }) {
@@ -48,8 +90,16 @@ function TicketsTable({ tickets, categories }) {
                 <div className="title">{ticket.title}</div>
                 <div className="desc line-clamp">{ticket.description}</div>
               </td>
-              <td>{badge(ticket.status, "status")}</td>
-              <td>{badge(ticket.priority, "priority")}</td>
+              <td>
+                <span className={getStatusBadgeClass(ticket.status)}>
+                  {getStatusLabel(ticket.status)}
+                </span>
+              </td>
+              <td>
+                <span className={getPriorityBadgeClass(ticket.priority)}>
+                  {ticket.priority}
+                </span>
+              </td>
               <td>{getCategoryName(ticket.category)}</td>
               <td>{ticket.assigned_to || "Unassigned"}</td>
               <td>
