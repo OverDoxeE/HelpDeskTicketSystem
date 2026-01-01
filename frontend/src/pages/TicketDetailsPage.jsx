@@ -1,6 +1,42 @@
 import React, { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { fetchTicketById, updateTicketStatus, deleteTicket } from "../api/ticketsApi";
+import {
+  fetchTicketById,
+  updateTicketStatus,
+  deleteTicket,
+} from "../api/ticketsApi";
+import { TICKET_STATUS, TICKET_STATUS_LABELS } from "../constants/ticketStatus";
+import "../styles/badges.css";
+// Badge helpers
+function getStatusBadgeClass(status) {
+  switch (status) {
+    case TICKET_STATUS.OPEN:
+      return "badge badge--status-open";
+    case TICKET_STATUS.IN_PROGRESS:
+      return "badge badge--status-in_progress";
+    case TICKET_STATUS.RESOLVED:
+      return "badge badge--status-resolved";
+    case TICKET_STATUS.CLOSED:
+      return "badge badge--status-closed";
+    default:
+      return "badge";
+  }
+}
+
+function getPriorityBadgeClass(priority) {
+  switch (priority) {
+    case "LOW":
+      return "badge badge--priority-low";
+    case "MEDIUM":
+      return "badge badge--priority-medium";
+    case "HIGH":
+      return "badge badge--priority-high";
+    case "CRITICAL":
+      return "badge badge--priority-critical";
+    default:
+      return "badge";
+  }
+}
 
 function TicketDetailsPage() {
   const { id } = useParams();
@@ -41,6 +77,7 @@ function TicketDetailsPage() {
       setSaving(true);
       setError(null);
 
+      // Always send uppercase backend value
       const updated = await updateTicketStatus(id, newStatus);
       if (!updated) {
         setError("Ticket not found");
@@ -81,32 +118,83 @@ function TicketDetailsPage() {
         <Link to="/tickets">← Back to tickets</Link>
       </p>
 
-      {error && <p style={{ color: "crimson", marginBottom: "12px" }}>{error}</p>}
+      {error && (
+        <p style={{ color: "crimson", marginBottom: "12px" }}>{error}</p>
+      )}
 
       {!ticket ? (
         <p>No ticket.</p>
       ) : (
-        <div style={{ border: "1px solid #ddd", padding: "12px", maxWidth: 600 }}>
-          <p><b>ID:</b> {ticket.id}</p>
-          <p><b>Title:</b> {ticket.title}</p>
-          <p><b>Description:</b> {ticket.description || "-"}</p>
-          <p><b>Status:</b> {ticket.status}</p>
+        <div
+          style={{ border: "1px solid #ddd", padding: "12px", maxWidth: 600 }}
+        >
+          <p>
+            <b>ID:</b> {ticket.id}
+          </p>
+          <p>
+            <b>Title:</b> {ticket.title}
+          </p>
+          <p>
+            <b>Description:</b> {ticket.description || "-"}
+          </p>
+          <p>
+            <b>Status:</b>{" "}
+            {TICKET_STATUS_LABELS[ticket.status] || ticket.status}
+            <span className={getStatusBadgeClass(ticket.status)}>
+              {ticket.status}
+            </span>
+          </p>
+          <p>
+            <b>Priority:</b> {ticket.priority}
+            <span className={getPriorityBadgeClass(ticket.priority)}>
+              {ticket.priority}
+            </span>
+          </p>
 
-          <div style={{ marginTop: "12px", display: "flex", gap: "8px" }}>
-            <button onClick={() => handleChangeStatus("open")} disabled={saving}>
-              Set OPEN
-            </button>
-            <button onClick={() => handleChangeStatus("in_progress")} disabled={saving}>
-              Set IN PROGRESS
-            </button>
-            <button onClick={() => handleChangeStatus("resolved")} disabled={saving}>
-              Set RESOLVED
-            </button>
-            <button onClick={handleDelete} disabled={saving}>
+          <div
+            style={{
+              marginTop: "16px",
+              display: "flex",
+              gap: "16px",
+              alignItems: "center",
+            }}
+          >
+            <label>
+              Change status:
+              <select
+                value={ticket.status}
+                onChange={(e) => handleChangeStatus(e.target.value)}
+                disabled={saving}
+                style={{
+                  marginLeft: 8,
+                  padding: "4px 12px",
+                  fontSize: 15,
+                  borderRadius: 6,
+                }}
+              >
+                {Object.values(TICKET_STATUS).map((status) => (
+                  <option key={status} value={status}>
+                    {TICKET_STATUS_LABELS[status]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              onClick={handleDelete}
+              disabled={saving}
+              style={{
+                background: "#e53935",
+                color: "#fff",
+                borderRadius: 8,
+                padding: "6px 18px",
+                fontWeight: 500,
+                border: "none",
+                cursor: saving ? "not-allowed" : "pointer",
+              }}
+            >
               Delete
             </button>
           </div>
-
           {saving && <p style={{ marginTop: "8px" }}>Saving...</p>}
         </div>
       )}

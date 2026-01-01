@@ -1,0 +1,36 @@
+.badge {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: #fff;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.badge--status-open {
+  background: #888;
+}
+.badge--status-in_progress {
+  background: #1976d2;
+}
+.badge--status-resolved {
+  background: #43a047;
+}
+.badge--status-closed {
+  background: #333;
+}
+.badge--priority-low {
+  background: #43a047;
+}
+.badge--priority-medium {
+  background: #ffd600;
+  color: #222;
+}
+.badge--priority-high {
+  background: #ff9800;
+}
+.badge--priority-critical {
+  background: #e53935;
+}
