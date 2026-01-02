@@ -1,30 +1,11 @@
-from django.contrib.auth import get_user_model
-
-# Serializer for assigning ticket to a technician
-class TicketAssignSerializer(serializers.Serializer):
-    assigned_to = serializers.IntegerField(required=False, allow_null=True)
-
-    def validate_assigned_to(self, value):
-        if value is None:
-            return None
-        User = get_user_model()
-        try:
-            user = User.objects.get(pk=value)
-        except User.DoesNotExist:
-            raise ValidationError("User with this id does not exist.")
-        # Only allow assignment to technician or admin
-        from .permissions import is_support_or_admin
-        if not is_support_or_admin(user):
-            raise ValidationError("User is not a technician or admin.")
-        return value
-
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from django.utils import timezone
-from .models import Category, Ticket, Comment
 from django.contrib.auth import get_user_model
 
-# Brief user serializer for displaying basic user info
+from .models import Category, Ticket, Comment
+from .permissions import is_support_or_admin
+
 class UserBriefSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
@@ -44,6 +25,7 @@ class TicketSerializer(serializers.ModelSerializer):
         allow_null=True,
         required=False,
     )
+
     created_by_user = UserBriefSerializer(source="created_by", read_only=True)
     assigned_to_user = UserBriefSerializer(source="assigned_to", read_only=True)
 
@@ -72,6 +54,8 @@ class TicketSerializer(serializers.ModelSerializer):
             "assigned_to",
         ]
 
+    # ---- Business validators ----
+
     def validate_title(self, value):
         if len(value.strip()) < 5:
             raise ValidationError("Title must be at least 5 characters long.")
@@ -92,6 +76,25 @@ class TicketSerializer(serializers.ModelSerializer):
         if self.instance is not None:
             if self.instance.status == "CLOSED" and value != "CLOSED":
                 raise ValidationError("Closed ticket cannot be reopened.")
+        return value
+
+class TicketAssignSerializer(serializers.Serializer):
+    assigned_to = serializers.IntegerField(required=False, allow_null=True)
+
+    def validate_assigned_to(self, value):
+        if value is None:
+            return None
+
+        User = get_user_model()
+
+        try:
+            user = User.objects.get(pk=value)
+        except User.DoesNotExist:
+            raise ValidationError("User with this id does not exist.")
+
+        if not is_support_or_admin(user):
+            raise ValidationError("User is not a technician or admin.")
+
         return value
 
 

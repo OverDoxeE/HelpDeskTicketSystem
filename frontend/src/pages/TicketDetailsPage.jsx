@@ -1,20 +1,26 @@
-import React, { useEffect, useState } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+// src/pages/TicketDetailsPage.jsx
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+
 import {
   fetchTicketById,
   updateTicketStatus,
   deleteTicket,
 } from "../api/ticketsApi";
+
+import api from "../api/httpClient";
+import { fetchTechnicians } from "../api/usersApi";
 import { TICKET_STATUS, TICKET_STATUS_LABELS } from "../constants/ticketStatus";
 import "../styles/badges.css";
 import { formatUserBrief } from "../utils/formatUser";
+
 // Badge helpers
 function getStatusBadgeClass(status) {
   switch (status) {
     case TICKET_STATUS.OPEN:
       return "badge badge--status-open";
     case TICKET_STATUS.IN_PROGRESS:
-      return "badge badge--status-in_progress";
+      return "badge badge--status-in-progress";
     case TICKET_STATUS.RESOLVED:
       return "badge badge--status-resolved";
     case TICKET_STATUS.CLOSED:
@@ -39,56 +45,130 @@ function getPriorityBadgeClass(priority) {
   }
 }
 
-function TicketDetailsPage() {
+export default function TicketDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [ticket, setTicket] = useState(null);
+  const [technicians, setTechnicians] = useState([]);
+
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
 
+  const [error, setError] = useState(null); // ogólne błędy ładowania/akcji
+  const [backendError, setBackendError] = useState(null); // błędy z save
+
+  // Draft state (Save/Cancel)
+  const [draftStatus, setDraftStatus] = useState("");
+  const [draftAssignedTo, setDraftAssignedTo] = useState(null); // number|null
+
+  // Load ticket + technicians
   useEffect(() => {
-    const load = async () => {
+    let mounted = true;
+
+    async function load() {
       try {
         setLoading(true);
         setError(null);
+        setBackendError(null);
 
-        const data = await fetchTicketById(id);
-        if (!data) {
-          setError("Ticket not found");
+        // 1) Ticket – krytyczne
+        const ticketData = await fetchTicketById(id);
+        if (!mounted) return;
+
+        if (!ticketData) {
           setTicket(null);
+          setError("Ticket not found");
           return;
         }
 
-        setTicket(data);
+        setTicket(ticketData);
+        setDraftStatus(ticketData.status || TICKET_STATUS.OPEN);
+        setDraftAssignedTo(ticketData.assigned_to ?? null);
+
+        // 2) Technicians – opcjonalne (nie blokuje widoku)
+        try {
+          const techs = await fetchTechnicians();
+          if (!mounted) return;
+          setTechnicians(Array.isArray(techs) ? techs : []);
+        } catch (e) {
+          // jeśli endpoint nie istnieje / 404 -> ignorujemy, dropdown będzie pusty
+          console.warn("Technicians endpoint unavailable:", e?.message);
+          if (!mounted) return;
+          setTechnicians([]);
+        }
       } catch (e) {
         console.error(e);
+        if (!mounted) return;
         setError("Failed to load ticket");
+        setTicket(null);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
-    };
+    }
 
     load();
+    return () => {
+      mounted = false;
+    };
   }, [id]);
 
-  const handleChangeStatus = async (newStatus) => {
-    try {
-      setSaving(true);
-      setError(null);
+  const isDirty = useMemo(() => {
+    if (!ticket) return false;
+    const currentAssigned = ticket.assigned_to ?? null;
+    const draftAssigned = draftAssignedTo ?? null;
+    return draftStatus !== ticket.status || draftAssigned !== currentAssigned;
+  }, [ticket, draftStatus, draftAssignedTo]);
 
-      // Always send uppercase backend value
-      const updated = await updateTicketStatus(id, newStatus);
-      if (!updated) {
-        setError("Ticket not found");
-        return;
+  const handleCancel = () => {
+    if (!ticket) return;
+    setDraftStatus(ticket.status || TICKET_STATUS.OPEN);
+    setDraftAssignedTo(ticket.assigned_to ?? null);
+    setBackendError(null);
+  };
+
+  const handleSave = async () => {
+    if (!ticket) return;
+
+    setSaving(true);
+    setBackendError(null);
+
+    try {
+      let updatedTicket = ticket;
+
+      // 1) Status
+      if (draftStatus !== ticket.status) {
+        updatedTicket = await updateTicketStatus(id, draftStatus);
       }
 
-      setTicket(updated);
+      // 2) Assigned to
+      const currentAssigned = ticket.assigned_to ?? null;
+      const draftAssigned = draftAssignedTo ?? null;
+
+      if (draftAssigned !== currentAssigned) {
+        const res = await api.patch(`/tickets/${id}/assign/`, {
+          assigned_to: draftAssigned,
+        });
+        updatedTicket = res.data;
+      }
+
+      setTicket(updatedTicket);
+      setDraftStatus(updatedTicket.status || TICKET_STATUS.OPEN);
+      setDraftAssignedTo(updatedTicket.assigned_to ?? null);
     } catch (e) {
       console.error(e);
-      setError("Failed to update status");
+
+      // spróbuj wyciągnąć sensowny komunikat z DRF
+      const msg =
+        e?.response?.data?.detail ||
+        e?.response?.data?.error ||
+        (typeof e?.response?.data === "object"
+          ? JSON.stringify(e.response.data)
+          : null) ||
+        e?.message ||
+        "Save failed";
+
+      setBackendError(msg);
     } finally {
       setSaving(false);
     }
@@ -96,6 +176,7 @@ function TicketDetailsPage() {
 
   const handleDelete = async () => {
     if (!window.confirm("Delete this ticket?")) return;
+
     try {
       setSaving(true);
       setError(null);
@@ -115,79 +196,152 @@ function TicketDetailsPage() {
     <div>
       <h1>Ticket Details</h1>
 
-      <p style={{ marginBottom: "12px" }}>
+      <p style={{ marginBottom: 12 }}>
         <Link to="/tickets">← Back to tickets</Link>
       </p>
 
-      {error && (
-        <p style={{ color: "crimson", marginBottom: "12px" }}>{error}</p>
-      )}
+      {error && <p style={{ color: "crimson", marginBottom: 12 }}>{error}</p>}
 
       {!ticket ? (
         <p>No ticket.</p>
       ) : (
-        <div
-          style={{ border: "1px solid #ddd", padding: "12px", maxWidth: 600 }}
-        >
-          <p>
-            <b>ID:</b> {ticket.id}
-          </p>
+        <div style={{ border: "1px solid #ddd", padding: 12, maxWidth: 720 }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <p style={{ margin: 0 }}>
+              <b>ID:</b> {ticket.id}
+            </p>
+
+            <p style={{ margin: 0 }}>
+              <b>Status:</b>{" "}
+              <span className={getStatusBadgeClass(ticket.status)}>
+                {TICKET_STATUS_LABELS[ticket.status] || ticket.status}
+              </span>
+            </p>
+
+            <p style={{ margin: 0 }}>
+              <b>Priority:</b>{" "}
+              <span className={getPriorityBadgeClass(ticket.priority)}>
+                {ticket.priority || "-"}
+              </span>
+            </p>
+          </div>
+
+          <hr style={{ margin: "12px 0" }} />
+
           <p>
             <b>Title:</b> {ticket.title}
           </p>
           <p>
             <b>Description:</b> {ticket.description || "-"}
           </p>
-          <p>
-            <b>Status:</b>{" "}
-            {TICKET_STATUS_LABELS[ticket.status] || ticket.status}
-            <span className={getStatusBadgeClass(ticket.status)}>
-              {ticket.status}
-            </span>
-          </p>
-          <p>
-            <b>Priority:</b> {ticket.priority}
-            <span className={getPriorityBadgeClass(ticket.priority)}>
-              {ticket.priority}
-            </span>
-          </p>
+
           <p>
             <b>Created by:</b>{" "}
-            {formatUserBrief(ticket.created_by_user, ticket.created_by)}
+            {ticket.created_by_user
+              ? formatUserBrief(ticket.created_by_user, ticket.created_by)
+              : `User #${ticket.created_by}`}
           </p>
+
           <p>
             <b>Assigned to:</b>{" "}
-            {formatUserBrief(ticket.assigned_to_user, ticket.assigned_to)}
+            {ticket.assigned_to_user
+              ? formatUserBrief(ticket.assigned_to_user, ticket.assigned_to)
+              : ticket.assigned_to
+              ? `User #${ticket.assigned_to}`
+              : "Unassigned"}
           </p>
 
           <div
             style={{
-              marginTop: "16px",
+              marginTop: 16,
               display: "flex",
-              gap: "16px",
+              gap: 16,
               alignItems: "center",
+              flexWrap: "wrap",
             }}
           >
             <label>
-              Change status:
+              Status:
               <select
-                value={ticket.status}
-                onChange={(e) => handleChangeStatus(e.target.value)}
+                value={draftStatus}
+                onChange={(e) => setDraftStatus(e.target.value)}
                 disabled={saving}
                 style={{
                   marginLeft: 8,
-                  padding: "4px 12px",
-                  fontSize: 15,
+                  padding: "6px 10px",
                   borderRadius: 6,
                 }}
               >
                 {Object.values(TICKET_STATUS).map((status) => (
                   <option key={status} value={status}>
-                    {TICKET_STATUS_LABELS[status]}
+                    {TICKET_STATUS_LABELS[status] || status}
                   </option>
                 ))}
               </select>
             </label>
+
+            <label>
+              Assigned to:
+              <select
+                value={draftAssignedTo ?? ""}
+                onChange={(e) =>
+                  setDraftAssignedTo(
+                    e.target.value === "" ? null : Number(e.target.value)
+                  )
+                }
+                disabled={saving}
+                style={{
+                  marginLeft: 8,
+                  padding: "6px 10px",
+                  borderRadius: 6,
+                  minWidth: 220,
+                }}
+              >
+                <option value="">Unassigned</option>
+                {technicians.map((tech) => (
+                  <option key={tech.id} value={tech.id}>
+                    {tech.email || tech.username || `User #${tech.id}`}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {isDirty && (
+              <>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  style={{
+                    background: "#1976d2",
+                    color: "#fff",
+                    borderRadius: 8,
+                    padding: "8px 16px",
+                    fontWeight: 600,
+                    border: "none",
+                    cursor: saving ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Save
+                </button>
+
+                <button
+                  onClick={handleCancel}
+                  disabled={saving}
+                  style={{
+                    background: "#6b7280",
+                    color: "#fff",
+                    borderRadius: 8,
+                    padding: "8px 16px",
+                    fontWeight: 600,
+                    border: "none",
+                    cursor: saving ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+
             <button
               onClick={handleDelete}
               disabled={saving}
@@ -195,8 +349,8 @@ function TicketDetailsPage() {
                 background: "#e53935",
                 color: "#fff",
                 borderRadius: 8,
-                padding: "6px 18px",
-                fontWeight: 500,
+                padding: "8px 16px",
+                fontWeight: 600,
                 border: "none",
                 cursor: saving ? "not-allowed" : "pointer",
               }}
@@ -204,11 +358,16 @@ function TicketDetailsPage() {
               Delete
             </button>
           </div>
-          {saving && <p style={{ marginTop: "8px" }}>Saving...</p>}
+
+          {backendError && (
+            <div style={{ color: "#b91c1c", marginTop: 10 }}>
+              {backendError}
+            </div>
+          )}
+
+          {saving && <p style={{ marginTop: 10 }}>Saving...</p>}
         </div>
       )}
     </div>
   );
 }
-
-export default TicketDetailsPage;
