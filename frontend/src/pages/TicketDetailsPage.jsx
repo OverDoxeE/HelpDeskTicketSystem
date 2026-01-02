@@ -13,8 +13,9 @@ import { fetchTechnicians } from "../api/usersApi";
 import { TICKET_STATUS, TICKET_STATUS_LABELS } from "../constants/ticketStatus";
 import "../styles/badges.css";
 import { formatUserBrief } from "../utils/formatUser";
+import CommentsSection from "../components/comments/CommentsSection";
 
-// Badge helpers
+// Badge helpersd
 function getStatusBadgeClass(status) {
   switch (status) {
     case TICKET_STATUS.OPEN:
@@ -368,6 +369,9 @@ export default function TicketDetailsPage() {
           {saving && <p style={{ marginTop: 10 }}>Saving...</p>}
         </div>
       )}
+
+      {/* Comments Section */}
+      {ticket && <CommentsSection ticketId={ticket.id} />}
     </div>
   );
 }

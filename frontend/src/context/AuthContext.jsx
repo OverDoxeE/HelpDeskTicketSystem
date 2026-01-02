@@ -1,10 +1,19 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+/* eslint-disable react-refresh/only-export-components */
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import api, { setAuthToken } from "../api/httpClient";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => localStorage.getItem("authToken") || null);
+  const [token, setToken] = useState(
+    () => localStorage.getItem("authToken") || null
+  );
   const [user, setUser] = useState(() => {
     try {
       const raw = localStorage.getItem("authUser");
@@ -37,6 +46,7 @@ export function AuthProvider({ children }) {
         setToken(null);
         setUser(null);
         setAuthToken(null);
+        console.error("Auth init error", e);
       } finally {
         setLoading(false);
       }

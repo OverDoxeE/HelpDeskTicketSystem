@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import "./ticketsTable.css";
+import "./TicketsTable.css";
 import "../../styles/badges.css";
 import { formatUserBrief } from "../../utils/formatUser";
 

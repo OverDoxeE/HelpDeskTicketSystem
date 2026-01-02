@@ -1,20 +1,21 @@
-import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import LoginForm from '../components/auth/LoginForm';
+import React, { useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import LoginForm from "../components/auth/LoginForm";
 
 function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleSubmit = async ({ email, password }) => {
     try {
       await login(email, password);
-      setError('');
-      navigate('/tickets');
+      setError("");
+      navigate("/tickets");
     } catch (e) {
-      setError('Login failed');
+      setError("Login failed");
+      console.error("Login error", e);
     }
   };
 
