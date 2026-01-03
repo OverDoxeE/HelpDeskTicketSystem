@@ -52,7 +52,8 @@ export function AuthProvider({ children }) {
       }
     };
     init();
-  }, []); // run once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const login = async (email, password) => {
     const res = await api.post("/auth/login/", { email, password });

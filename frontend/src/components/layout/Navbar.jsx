@@ -1,71 +1,123 @@
-import React from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import "./navbar.css";
+import {
+  AppBar,
+  Toolbar,
+  Button,
+  IconButton,
+  Avatar,
+  Menu,
+  MenuItem,
+  Typography,
+  Link,
+} from "@mui/material";
+import AccountCircle from "@mui/icons-material/AccountCircle";
 
 function Navbar() {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
+  const [anchorEl, setAnchorEl] = useState(null);
 
   const handleLogout = () => {
     logout();
     navigate("/login");
+    setAnchorEl(null);
+  };
+
+  const handleMenu = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleUserPanel = () => {
+    navigate("/user");
+    setAnchorEl(null);
   };
 
   return (
-    <nav className="navbar-root">
-      <div className="navbar-inner">
-        <div className="navbar-links">
-          <NavLink to="/tickets" className="navbar-logo">
+    <AppBar position="static">
+      <Toolbar>
+        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          <Link
+            component={RouterLink}
+            to="/tickets"
+            color="inherit"
+            underline="none"
+          >
             HelpDesk
-          </NavLink>
-          {isAuthenticated && (
-            <>
-              <NavLink
-                to="/tickets"
-                className={({ isActive }) =>
-                  "navbar-link" + (isActive ? " active" : "")
-                }
-              >
-                Tickets
-              </NavLink>
-              <NavLink
-                to="/tickets/add"
-                className={({ isActive }) =>
-                  "navbar-link" + (isActive ? " active" : "")
-                }
-              >
-                New ticket
-              </NavLink>
-              <NavLink
-                to="/user"
-                className={({ isActive }) =>
-                  "navbar-link" + (isActive ? " active" : "")
-                }
-              >
-                User panel
-              </NavLink>
-            </>
-          )}
-        </div>
-        <div>
-          {isAuthenticated ? (
-            <button className="navbar-logout-btn" onClick={handleLogout}>
-              Logout ({user?.email || user?.username || "user"})
-            </button>
-          ) : (
-            <NavLink
-              to="/login"
-              className={({ isActive }) =>
-                "navbar-link" + (isActive ? " active" : "")
-              }
+          </Link>
+        </Typography>
+        {isAuthenticated && (
+          <>
+            <Button
+              component={RouterLink}
+              to="/tickets"
+              color="inherit"
+              variant={({ isActive }) => (isActive ? "contained" : "text")}
             >
-              Login
-            </NavLink>
-          )}
-        </div>
-      </div>
-    </nav>
+              Tickets
+            </Button>
+            <Button
+              component={RouterLink}
+              to="/tickets/add"
+              color="inherit"
+              variant={({ isActive }) => (isActive ? "contained" : "text")}
+            >
+              New ticket
+            </Button>
+          </>
+        )}
+        {isAuthenticated ? (
+          <div>
+            <IconButton
+              size="large"
+              aria-label="account of current user"
+              aria-controls="menu-appbar"
+              aria-haspopup="true"
+              onClick={handleMenu}
+              color="inherit"
+            >
+              <Avatar>
+                <AccountCircle />
+              </Avatar>
+            </IconButton>
+            <Menu
+              id="menu-appbar"
+              anchorEl={anchorEl}
+              anchorOrigin={{
+                vertical: "top",
+                horizontal: "right",
+              }}
+              keepMounted
+              transformOrigin={{
+                vertical: "top",
+                horizontal: "right",
+              }}
+              open={Boolean(anchorEl)}
+              onClose={handleClose}
+            >
+              <MenuItem onClick={handleUserPanel}>User panel</MenuItem>
+              <MenuItem onClick={handleLogout}>
+                Logout ({user?.email || user?.username || "user"})
+              </MenuItem>
+            </Menu>
+          </div>
+        ) : (
+          <Button
+            component={RouterLink}
+            to="/login"
+            color="inherit"
+            variant={({ isActive }) => (isActive ? "contained" : "text")}
+          >
+            Login
+          </Button>
+        )}
+      </Toolbar>
+    </AppBar>
   );
 }
 
