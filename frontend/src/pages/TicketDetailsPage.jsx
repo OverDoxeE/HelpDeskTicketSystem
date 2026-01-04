@@ -3,47 +3,94 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import {
+  Container,
+  Paper,
+  Typography,
+  Alert,
+  Button,
+  Divider,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  CircularProgress,
+  Box,
+  Chip,
+} from "@mui/material";
+
+import {
   fetchTicketById,
   updateTicketStatus,
   deleteTicket,
 } from "../api/ticketsApi";
-
 import api from "../api/httpClient";
 import { fetchTechnicians } from "../api/usersApi";
-import { TICKET_STATUS, TICKET_STATUS_LABELS } from "../constants/ticketStatus";
-import "../styles/badges.css";
-import { formatUserBrief } from "../utils/formatUser";
-import CommentsSection from "../components/comments/CommentsSection";
 
-// Badge helpersd
-function getStatusBadgeClass(status) {
+import { TICKET_STATUS, TICKET_STATUS_LABELS } from "../constants/ticketStatus";
+import { formatUserBrief } from "../utils/formatUser";
+
+import CommentsSection from "../components/comments/CommentsSection";
+import "./TicketDetailsPage.css";
+
+// --- Helpers: badge -> MUI Chip color/variant mapping ---
+function statusChipProps(status) {
   switch (status) {
     case TICKET_STATUS.OPEN:
-      return "badge badge--status-open";
+      return {
+        label: TICKET_STATUS_LABELS[status] || "OPEN",
+        className: "chip chip--open",
+      };
     case TICKET_STATUS.IN_PROGRESS:
-      return "badge badge--status-in-progress";
+      return {
+        label: TICKET_STATUS_LABELS[status] || "IN PROGRESS",
+        className: "chip chip--inprogress",
+      };
     case TICKET_STATUS.RESOLVED:
-      return "badge badge--status-resolved";
+      return {
+        label: TICKET_STATUS_LABELS[status] || "RESOLVED",
+        className: "chip chip--resolved",
+      };
     case TICKET_STATUS.CLOSED:
-      return "badge badge--status-closed";
+      return {
+        label: TICKET_STATUS_LABELS[status] || "CLOSED",
+        className: "chip chip--closed",
+      };
     default:
-      return "badge";
+      return { label: status || "-", className: "chip" };
   }
 }
 
-function getPriorityBadgeClass(priority) {
+function priorityChipProps(priority) {
   switch (priority) {
     case "LOW":
-      return "badge badge--priority-low";
+      return { label: "LOW", className: "chip chip--p-low" };
     case "MEDIUM":
-      return "badge badge--priority-medium";
+      return { label: "MEDIUM", className: "chip chip--p-medium" };
     case "HIGH":
-      return "badge badge--priority-high";
+      return { label: "HIGH", className: "chip chip--p-high" };
     case "CRITICAL":
-      return "badge badge--priority-critical";
+      return { label: "CRITICAL", className: "chip chip--p-critical" };
     default:
-      return "badge";
+      return { label: priority || "-", className: "chip" };
   }
+}
+
+function parseBackendError(e) {
+  const data = e?.response?.data;
+  if (!data) return e?.message || "Save failed";
+  if (typeof data === "string") return data;
+  if (typeof data === "object") {
+    return (
+      data.detail ||
+      data.error ||
+      Object.entries(data)
+        .map(([k, v]) =>
+          Array.isArray(v) ? `${k}: ${v.join(" ")}` : `${k}: ${String(v)}`
+        )
+        .join("\n")
+    );
+  }
+  return "Save failed";
 }
 
 export default function TicketDetailsPage() {
@@ -56,12 +103,12 @@ export default function TicketDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [error, setError] = useState(null); // ogólne błędy ładowania/akcji
-  const [backendError, setBackendError] = useState(null); // błędy z save
+  const [error, setError] = useState(null);
+  const [backendError, setBackendError] = useState(null);
 
   // Draft state (Save/Cancel)
   const [draftStatus, setDraftStatus] = useState("");
-  const [draftAssignedTo, setDraftAssignedTo] = useState(null); // number|null
+  const [draftAssignedTo, setDraftAssignedTo] = useState(null);
 
   // Load ticket + technicians
   useEffect(() => {
@@ -93,7 +140,6 @@ export default function TicketDetailsPage() {
           if (!mounted) return;
           setTechnicians(Array.isArray(techs) ? techs : []);
         } catch (e) {
-          // jeśli endpoint nie istnieje / 404 -> ignorujemy, dropdown będzie pusty
           console.warn("Technicians endpoint unavailable:", e?.message);
           if (!mounted) return;
           setTechnicians([]);
@@ -158,18 +204,7 @@ export default function TicketDetailsPage() {
       setDraftAssignedTo(updatedTicket.assigned_to ?? null);
     } catch (e) {
       console.error(e);
-
-      // spróbuj wyciągnąć sensowny komunikat z DRF
-      const msg =
-        e?.response?.data?.detail ||
-        e?.response?.data?.error ||
-        (typeof e?.response?.data === "object"
-          ? JSON.stringify(e.response.data)
-          : null) ||
-        e?.message ||
-        "Save failed";
-
-      setBackendError(msg);
+      setBackendError(parseBackendError(e));
     } finally {
       setSaving(false);
     }
@@ -191,187 +226,213 @@ export default function TicketDetailsPage() {
     }
   };
 
-  if (loading) return <p>Loading ticket...</p>;
+  if (loading) {
+    return (
+      <div className="ticket-details-root">
+        <Container maxWidth="md">
+          <Paper elevation={3} className="ticket-details-card">
+            <Box className="ticket-details-loading">
+              <CircularProgress size={24} />
+              <Typography sx={{ ml: 2 }}>Loading ticket...</Typography>
+            </Box>
+          </Paper>
+        </Container>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <h1>Ticket Details</h1>
+    <div className="ticket-details-root">
+      <Container maxWidth="md" className="ticket-details-container">
+        <Paper elevation={3} className="ticket-details-card">
+          <div className="ticket-details-header">
+            <Typography variant="h4" fontWeight={700}>
+              Ticket Details
+            </Typography>
 
-      <p style={{ marginBottom: 12 }}>
-        <Link to="/tickets">← Back to tickets</Link>
-      </p>
-
-      {error && <p style={{ color: "crimson", marginBottom: 12 }}>{error}</p>}
-
-      {!ticket ? (
-        <p>No ticket.</p>
-      ) : (
-        <div style={{ border: "1px solid #ddd", padding: 12, maxWidth: 720 }}>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <p style={{ margin: 0 }}>
-              <b>ID:</b> {ticket.id}
-            </p>
-
-            <p style={{ margin: 0 }}>
-              <b>Status:</b>{" "}
-              <span className={getStatusBadgeClass(ticket.status)}>
-                {TICKET_STATUS_LABELS[ticket.status] || ticket.status}
-              </span>
-            </p>
-
-            <p style={{ margin: 0 }}>
-              <b>Priority:</b>{" "}
-              <span className={getPriorityBadgeClass(ticket.priority)}>
-                {ticket.priority || "-"}
-              </span>
-            </p>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              <Link to="/tickets" className="ticket-details-backlink">
+                ← Back to tickets
+              </Link>
+            </Typography>
           </div>
 
-          <hr style={{ margin: "12px 0" }} />
+          {error ? (
+            <Alert severity="error" className="ticket-details-alert">
+              {error}
+            </Alert>
+          ) : null}
 
-          <p>
-            <b>Title:</b> {ticket.title}
-          </p>
-          <p>
-            <b>Description:</b> {ticket.description || "-"}
-          </p>
+          {!ticket ? (
+            <Typography>No ticket.</Typography>
+          ) : (
+            <>
+              {/* Top meta row */}
+              <div className="ticket-details-meta">
+                <div className="ticket-details-meta-item">
+                  <Typography variant="body2" color="text.secondary">
+                    ID
+                  </Typography>
+                  <Typography fontWeight={700}>{ticket.id}</Typography>
+                </div>
 
-          <p>
-            <b>Created by:</b>{" "}
-            {ticket.created_by_user
-              ? formatUserBrief(ticket.created_by_user, ticket.created_by)
-              : `User #${ticket.created_by}`}
-          </p>
+                <div className="ticket-details-meta-item">
+                  <Typography variant="body2" color="text.secondary">
+                    Status
+                  </Typography>
+                  <Chip size="small" {...statusChipProps(ticket.status)} />
+                </div>
 
-          <p>
-            <b>Assigned to:</b>{" "}
-            {ticket.assigned_to_user
-              ? formatUserBrief(ticket.assigned_to_user, ticket.assigned_to)
-              : ticket.assigned_to
-              ? `User #${ticket.assigned_to}`
-              : "Unassigned"}
-          </p>
+                <div className="ticket-details-meta-item">
+                  <Typography variant="body2" color="text.secondary">
+                    Priority
+                  </Typography>
+                  <Chip size="small" {...priorityChipProps(ticket.priority)} />
+                </div>
+              </div>
 
-          <div
-            style={{
-              marginTop: 16,
-              display: "flex",
-              gap: 16,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <label>
-              Status:
-              <select
-                value={draftStatus}
-                onChange={(e) => setDraftStatus(e.target.value)}
-                disabled={saving}
-                style={{
-                  marginLeft: 8,
-                  padding: "6px 10px",
-                  borderRadius: 6,
-                }}
-              >
-                {Object.values(TICKET_STATUS).map((status) => (
-                  <option key={status} value={status}>
-                    {TICKET_STATUS_LABELS[status] || status}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <Divider sx={{ my: 2 }} />
 
-            <label>
-              Assigned to:
-              <select
-                value={draftAssignedTo ?? ""}
-                onChange={(e) =>
-                  setDraftAssignedTo(
-                    e.target.value === "" ? null : Number(e.target.value)
-                  )
-                }
-                disabled={saving}
-                style={{
-                  marginLeft: 8,
-                  padding: "6px 10px",
-                  borderRadius: 6,
-                  minWidth: 220,
-                }}
-              >
-                <option value="">Unassigned</option>
-                {technicians.map((tech) => (
-                  <option key={tech.id} value={tech.id}>
-                    {tech.email || tech.username || `User #${tech.id}`}
-                  </option>
-                ))}
-              </select>
-            </label>
+              {/* Content */}
+              <div className="ticket-details-content">
+                <div className="ticket-details-block">
+                  <Typography variant="body2" color="text.secondary">
+                    Title
+                  </Typography>
+                  <Typography fontWeight={700}>{ticket.title}</Typography>
+                </div>
 
-            {isDirty && (
-              <>
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  style={{
-                    background: "#1976d2",
-                    color: "#fff",
-                    borderRadius: 8,
-                    padding: "8px 16px",
-                    fontWeight: 600,
-                    border: "none",
-                    cursor: saving ? "not-allowed" : "pointer",
-                  }}
+                <div className="ticket-details-block">
+                  <Typography variant="body2" color="text.secondary">
+                    Description
+                  </Typography>
+                  <Typography>{ticket.description || "-"}</Typography>
+                </div>
+
+                <div className="ticket-details-grid">
+                  <div className="ticket-details-block">
+                    <Typography variant="body2" color="text.secondary">
+                      Created by
+                    </Typography>
+                    <Typography>
+                      {ticket.created_by_user
+                        ? formatUserBrief(
+                            ticket.created_by_user,
+                            ticket.created_by
+                          )
+                        : `User #${ticket.created_by}`}
+                    </Typography>
+                  </div>
+
+                  <div className="ticket-details-block">
+                    <Typography variant="body2" color="text.secondary">
+                      Assigned to
+                    </Typography>
+                    <Typography>
+                      {ticket.assigned_to_user
+                        ? formatUserBrief(
+                            ticket.assigned_to_user,
+                            ticket.assigned_to
+                          )
+                        : ticket.assigned_to
+                        ? `User #${ticket.assigned_to}`
+                        : "Unassigned"}
+                    </Typography>
+                  </div>
+                </div>
+              </div>
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* Controls */}
+              <div className="ticket-details-controls">
+                <FormControl fullWidth>
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    value={draftStatus}
+                    label="Status"
+                    onChange={(e) => setDraftStatus(e.target.value)}
+                    disabled={saving}
+                  >
+                    {Object.values(TICKET_STATUS).map((status) => (
+                      <MenuItem key={status} value={status}>
+                        {TICKET_STATUS_LABELS[status] || status}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl
+                  fullWidth
+                  disabled={saving || technicians.length === 0}
                 >
-                  Save
-                </button>
+                  <InputLabel>Assigned to</InputLabel>
+                  <Select
+                    value={draftAssignedTo ?? ""}
+                    label="Assigned to"
+                    onChange={(e) =>
+                      setDraftAssignedTo(
+                        e.target.value === "" ? null : Number(e.target.value)
+                      )
+                    }
+                  >
+                    <MenuItem value="">Unassigned</MenuItem>
+                    {technicians.map((tech) => (
+                      <MenuItem key={tech.id} value={tech.id}>
+                        {tech.email || tech.username || `User #${tech.id}`}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </div>
 
-                <button
+              {/* Actions */}
+              <div className="ticket-details-actions">
+                <Button
+                  variant="outlined"
+                  color="inherit"
                   onClick={handleCancel}
-                  disabled={saving}
-                  style={{
-                    background: "#6b7280",
-                    color: "#fff",
-                    borderRadius: 8,
-                    padding: "8px 16px",
-                    fontWeight: 600,
-                    border: "none",
-                    cursor: saving ? "not-allowed" : "pointer",
-                  }}
+                  disabled={saving || !isDirty}
                 >
                   Cancel
-                </button>
-              </>
-            )}
+                </Button>
 
-            <button
-              onClick={handleDelete}
-              disabled={saving}
-              style={{
-                background: "#e53935",
-                color: "#fff",
-                borderRadius: 8,
-                padding: "8px 16px",
-                fontWeight: 600,
-                border: "none",
-                cursor: saving ? "not-allowed" : "pointer",
-              }}
-            >
-              Delete
-            </button>
-          </div>
+                <Button
+                  variant="contained"
+                  onClick={handleSave}
+                  disabled={saving || !isDirty}
+                  startIcon={saving ? <CircularProgress size={18} /> : null}
+                >
+                  {saving ? "Saving..." : "Save changes"}
+                </Button>
 
-          {backendError && (
-            <div style={{ color: "#b91c1c", marginTop: 10 }}>
-              {backendError}
-            </div>
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={handleDelete}
+                  disabled={saving}
+                >
+                  Delete ticket
+                </Button>
+              </div>
+
+              {backendError ? (
+                <Alert
+                  severity="error"
+                  className="ticket-details-alert"
+                  sx={{ whiteSpace: "pre-line" }}
+                >
+                  {backendError}
+                </Alert>
+              ) : null}
+
+              {/* Comments */}
+              <Divider sx={{ my: 3 }} />
+              <CommentsSection ticketId={ticket.id} />
+            </>
           )}
-
-          {saving && <p style={{ marginTop: 10 }}>Saving...</p>}
-        </div>
-      )}
-
-      {/* Comments Section */}
-      {ticket && <CommentsSection ticketId={ticket.id} />}
+        </Paper>
+      </Container>
     </div>
   );
 }
