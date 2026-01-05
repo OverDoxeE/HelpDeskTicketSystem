@@ -53,7 +53,9 @@ const sorters = {
   category: (a, b, categories) =>
     (categories[a.category] || "").localeCompare(categories[b.category] || ""),
   assigned: (a, b) =>
-    ((a.assigned_to_user?.email) || "").localeCompare((b.assigned_to_user?.email) || ""),
+    (a.assigned_to_user?.email || "").localeCompare(
+      b.assigned_to_user?.email || ""
+    ),
   created_at: (a, b) =>
     new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   due_date: (a, b) => {
