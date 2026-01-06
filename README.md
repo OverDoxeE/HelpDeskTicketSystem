@@ -201,6 +201,26 @@ python manage.py seed_demo_data
 Tworzy przykładowych użytkowników, kategorie, tickety i komentarze.
 
 ---
+tworzone są przykładowe konta użytkowników wraz z przypisanymi rolami:
+
+🔹 Administrator
+
+Email: admin@example.com
+
+Hasło: admin123
+
+🔹 Technik IT
+
+Email: tech@example.com
+
+Hasło: tech123
+
+🔹 Zwykły użytkownik
+
+Email: user@example.com
+
+Hasło: user123
+---
 
 ### 7️⃣ Uruchomienie serwera
 
