@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import TicketsTable from "../components/tickets/TicketsTable";
 import { fetchTickets } from "../api/ticketsApi";
 import { fetchCategories } from "../api/categoriesApi";
@@ -8,6 +8,9 @@ import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
+import Switch from "@mui/material/Switch";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import { useAuth } from "../context/AuthContext";
 import "./TicketListPage.css";
 
 function TicketListPage() {
@@ -15,6 +18,29 @@ function TicketListPage() {
   const [categories, setCategories] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [onlyAssignedToMe, setOnlyAssignedToMe] = useState(false);
+
+  const { user } = useAuth() || {};
+
+  // Defensive helper for role check
+  const isSupportOrAdmin = useMemo(() => {
+    if (!user) return false;
+    // Accepts: user.role or user.groups (array of roles)
+    const roles = [
+      typeof user.role === "string" ? user.role : null,
+      ...(Array.isArray(user.groups) ? user.groups : []),
+    ]
+      .filter(Boolean)
+      .map((r) => r.toLowerCase());
+    return roles.includes("technician") || roles.includes("admin");
+  }, [user]);
+
+  const visibleTickets = useMemo(() => {
+    if (!onlyAssignedToMe) return tickets;
+    return tickets.filter(
+      (t) => (t.assigned_to ?? null) === (user?.id ?? null)
+    );
+  }, [tickets, onlyAssignedToMe, user?.id]);
 
   const loadData = async () => {
     try {
@@ -49,6 +75,20 @@ function TicketListPage() {
             <Typography variant="body2" color="text.secondary">
               Browse all submitted help desk tickets below.
             </Typography>
+            {isSupportOrAdmin && (
+              <Box mt={2} display="flex" justifyContent="center">
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={onlyAssignedToMe}
+                      onChange={(_, checked) => setOnlyAssignedToMe(checked)}
+                      color="primary"
+                    />
+                  }
+                  label="Assigned to me only"
+                />
+              </Box>
+            )}
           </Box>
           {loading ? (
             <Box
@@ -64,8 +104,10 @@ function TicketListPage() {
             </Box>
           ) : error ? (
             <Alert severity="error">{error}</Alert>
+          ) : onlyAssignedToMe && visibleTickets.length === 0 ? (
+            <Alert severity="info">Brak przypisanych ticketów.</Alert>
           ) : (
-            <TicketsTable tickets={tickets} categories={categories} />
+            <TicketsTable tickets={visibleTickets} categories={categories} />
           )}
         </Paper>
       </Container>

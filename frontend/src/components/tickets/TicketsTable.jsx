@@ -69,6 +69,7 @@ const sorters = {
 const SORT_KEYS = [
   { key: "id", label: "ID" },
   { key: "status", label: "Status" },
+  { key: "summary", label: "Ticket" },
   { key: "priority", label: "Priority" },
   { key: "category", label: "Category" },
   { key: "assigned", label: "Assigned" },
@@ -82,6 +83,8 @@ function TicketsTable({ tickets, categories }) {
   const [sortDir, setSortDir] = useState(null);
 
   const toggleSort = (key) => {
+    if (key === "summary") return;
+
     if (sortKey !== key) {
       setSortKey(key);
       setSortDir("asc");
@@ -154,9 +157,12 @@ function TicketsTable({ tickets, categories }) {
             {SORT_KEYS.map(({ key, label }) => (
               <th
                 key={key}
-                className="sortable"
+                className={key === "summary" ? "" : "sortable"}
                 onClick={() => toggleSort(key)}
-                style={{ userSelect: "none" }}
+                style={{
+                  userSelect: "none",
+                  cursor: key === "summary" ? "default" : "pointer",
+                }}
               >
                 {label} {renderSortArrow(key)}
               </th>
