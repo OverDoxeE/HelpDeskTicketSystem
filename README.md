@@ -269,5 +269,6 @@ Projekt spełnia **wszystkie kryteria zaliczeniowe**:
 
 ## ✍️ Autorzy
 
-- **Backend & Frontend**: @OverDoxeE
+- **Frontend**: @OverDoxeE
+- **Backend**: @GregorySVD
 
