@@ -1,78 +1,91 @@
-# HelpDeskTicketSystem – Backend
+# HelpDeskTicketSystem – Projekt zaliczeniowy (Backend + Frontend)
 
-## Opis projektu
+## 📌 Opis projektu
 
-HelpDeskTicketSystem to backendowa aplikacja webowa stworzona jako **projekt zaliczeniowy z przedmiotu *****Programowanie Zaawansowane***.\
-System realizuje uproszczony **Help Desk / Ticket System** inspirowany narzędziami typu ServiceNow.
+**HelpDeskTicketSystem** to kompletna aplikacja webowa typu **Help Desk / Ticket System**, zrealizowana jako **projekt zaliczeniowy z przedmiotu _Programowanie Zaawansowane_**.
 
-Backend odpowiada za:
+Projekt został wykonany w architekturze **klient–serwer** i składa się z:
 
-- uwierzytelnianie i autoryzację użytkowników
-- zarządzanie ticketami, kategoriami i komentarzami
-- egzekwowanie reguł biznesowych i uprawnień
-- udostępnianie REST API dla oddzielnego frontendu
+- **Backendu** (Django 5 + Django REST Framework)
+- **Frontendu** (React SPA + MUI)
 
-Projekt został zaprojektowany w celu jednoznacznego zaprezentowania:
+System umożliwia zgłaszanie, przeglądanie oraz obsługę zgłoszeń IT (ticketów) z wykorzystaniem **systemu ról, ORM oraz walidacji biznesowej**.
 
-- architektury **klient–serwer**
-- wykorzystania **ORM (Django ORM)** oraz relacyjnej bazy danych
-- **systemu ról i uprawnień**
-- zastosowania **wzorca projektowego (Command)**
-- czytelnego podziału odpowiedzialności w kodzie
+---
 
-## 🧱 Architektura
+## 🎯 Realizacja tematu
 
+Projekt **w całości realizuje wybrany temat**:
+
+- użytkownicy mogą zgłaszać tickety powiązane z ich kontem
+- technicy IT obsługują zgłoszenia, zmieniają ich status i przypisanie
+- administrator posiada pełny dostęp do systemu
+- dane przechowywane są w relacyjnej bazie danych SQL
+- frontend komunikuje się z backendem przez REST API
+
+---
+
+## 🧱 Architektura i wzorce
+
+### Architektura
+
+- **Styl**: Klient–Serwer
 - **Backend**: Django 5 + Django REST Framework
-- **Styl architektoniczny**: Klient–Serwer, architektura warstwowa
-- **Baza danych**: SQLite (wystarczająca dla projektu akademickiego)
+- **Frontend**: React (Vite) + Material UI (MUI)
+- **Baza danych**: SQLite
 
-### Zastosowane wzorce projektowe
+Kod backendu posiada czytelny **podział na warstwy**:
 
-#### ✅ Wzorzec Polecenie (Command Pattern)
+- views (kontrolery API)
+- serializers (walidacja i mapowanie danych)
+- permissions (autoryzacja)
+- services (logika biznesowa)
 
-W projekcie zastosowano wzorzec **Command** do obsługi zmiany statusu ticketu.
+### ✅ Zastosowany wzorzec projektowy – Command Pattern
 
-Zamiast modyfikować stan ticketu bezpośrednio w widoku, logika biznesowa została przeniesiona do klasy polecenia:
+W projekcie zastosowano **wzorzec Polecenie (Command)** do obsługi zmiany statusu ticketu:
 
 - `ChangeTicketStatusCommand`
 
 Korzyści:
 
-- rozdzielenie logiki biznesowej od warstwy HTTP
-- łatwa rozbudowa (np. logowanie historii zmian, powiadomienia)
-- uproszczone i czytelne widoki (kontrolery)
+- oddzielenie logiki biznesowej od warstwy HTTP
+- możliwość łatwej rozbudowy (np. historia zmian, notyfikacje)
+- czytelniejsze i prostsze widoki API
 
-Wzorzec **Command** jest kluczowym elementem architektury projektu i spełnia wymagania kursu.
+Wzorzec jest użyty **świadomie i adekwatnie do skali projektu**.
 
 ---
 
-## 👥 Role użytkowników i uprawnienia
+## 👥 Role użytkowników
 
-System obsługuje kilka ról użytkowników:
+System obsługuje **trzy role**, których działanie jest odczuwalne w aplikacji:
 
-| Rola       | Opis                                                                                  |
-| ---------- | ------------------------------------------------------------------------------------- |
-| USER       | Może tworzyć tickety, przeglądać własne tickety, dodawać publiczne komentarze         |
-| TECHNICIAN | Może przeglądać wszystkie tickety, zmieniać ich status, widzieć komentarze wewnętrzne |
-| ADMIN      | Pełny dostęp, zarządzanie użytkownikami, usuwanie komentarzy                          |
+| Rola | Uprawnienia |
+|-----|-------------|
+| **USER** | Tworzy tickety, widzi tylko własne zgłoszenia, dodaje publiczne komentarze |
+| **TECHNICIAN** | Widzi wszystkie tickety, może je przypisywać, zmieniać status, widzi komentarze wewnętrzne |
+| **ADMIN** | Pełny dostęp: użytkownicy, kategorie, tickety, usuwanie komentarzy |
 
 Uprawnienia realizowane są przy użyciu:
 
-- systemu uprawnień Django
+- systemu użytkowników Django
 - własnych klas permissions w Django REST Framework
 
 ---
 
-## 🗃️ Modele i relacje w bazie danych
+## 🗃️ Modele i relacje (ORM)
 
-Główne encje:
+Projekt wykorzystuje **Django ORM** w sposób zaawansowany.
+
+### Modele:
 
 - **User** (wbudowany model Django)
 - **Ticket**
 - **Category**
 - **Comment**
 
-Relacje:
+### Relacje:
 
 - Ticket → User (`created_by`)
 - Ticket → User (`assigned_to`)
@@ -80,21 +93,49 @@ Relacje:
 - Comment → Ticket
 - Comment → User (`author`)
 
+ORM wykorzystywany jest do:
+
+- CRUD
+- filtrowania i sortowania
+- złożonych zapytań (`select_related`, `annotate`, `Count`)
+- statystyk i agregacji danych
+
 ---
 
-## ✅ Walidatory biznesowe
+## ✅ Walidacja danych (logika biznesowa)
 
-Projekt zawiera **walidację logiki biznesowej** na poziomie serializerów:
-
-Przykłady:
+Projekt zawiera **pełny zestaw walidatorów biznesowych**, m.in.:
 
 - minimalna długość tytułu i opisu ticketu
-- termin (`due_date`) nie może być w przeszłości
-- zamknięty ticket nie może zostać ponownie otwarty
+- `due_date` nie może być w przeszłości
+- zamknięty ticket (`CLOSED`) nie może zostać ponownie otwarty
+- walidacja przypisania ticketu tylko do TECHNICIAN / ADMIN
 - walidacja treści komentarzy
-- komentarze wewnętrzne dostępne tylko dla techników i administratorów
+- komentarze wewnętrzne widoczne tylko dla techników i administratorów
 
-## 🚀 Jak uruchomić backend od zera (po `git clone`)
+Walidacja realizowana jest głównie na poziomie **serializerów DRF**.
+
+---
+
+## 🖥 Frontend (React)
+
+Frontend jest oddzielną aplikacją SPA:
+
+- React + Vite
+- Material UI (MUI)
+- komunikacja z backendem przez REST API
+
+Zaimplementowane widoki:
+
+- Login Page
+- Lista ticketów (tabela z sortowaniem)
+- Filtrowanie „Moje przypisane” dla techników
+- Szczegóły ticketu (edycja statusu, priorytetu, przypisania)
+- Sekcja komentarzy (publiczne + wewnętrzne)
+- Panel użytkownika
+---
+
+## 🚀 Jak uruchomić projekt (od zera)
 
 ### 1️⃣ Klonowanie repozytorium
 
@@ -113,29 +154,28 @@ python -m venv venv
 
 Aktywacja:
 
-- **Windows (PowerShell)**
-
+**Windows (PowerShell)**
 ```bash
 venv\Scripts\Activate
 ```
 
-- **Linux / macOS**
-
+**Linux / macOS**
 ```bash
 source venv/bin/activate
 ```
 
 ---
 
-### 3️⃣ Instalacja zależności
+### 3️⃣ Instalacja zależności backendu
 
 ```bash
 pip install -r requirements.txt
 ```
 
-> ⚠️ Uwaga: katalog `venv`, plik `db.sqlite3` oraz pliki środowiskowe są ignorowane przez git i muszą zostać utworzone lokalnie.
+> Katalog `venv`, plik `db.sqlite3` oraz pliki środowiskowe są ignorowane przez git i tworzone lokalnie.
 
 ---
+
 ### 4️⃣ Migracje bazy danych
 
 ```bash
@@ -144,43 +184,31 @@ python manage.py migrate
 
 ---
 
-### 5️⃣ Utworzenie superusera (administrator)
+### 5️⃣ Utworzenie konta administratora
 
 ```bash
 python manage.py createsuperuser
 ```
 
-Konto administratora umożliwia:
-
-- logowanie do panelu Django Admin
-- zarządzanie użytkownikami i rolami
-
 ---
 
-### 6️⃣ (Opcjonalnie) Dane testowe / seed
-
-Jeśli dostępna jest komenda seedująca dane:
+### 6️⃣ (Opcjonalnie) Dane testowe
 
 ```bash
 python manage.py seed_demo_data
 ```
 
-Komenda tworzy przykładowych:
-
-- użytkowników
-- tickety
-- kategorie
-- komentarze
+Tworzy przykładowych użytkowników, kategorie, tickety i komentarze.
 
 ---
 
-### 7️⃣ Uruchomienie serwera developerskiego
+### 7️⃣ Uruchomienie serwera
 
 ```bash
 python manage.py runserver
 ```
 
-Backend będzie dostępny pod adresem:
+Aplikacja dostępna pod adresem:
 
 ```
 http://127.0.0.1:8000/
@@ -196,13 +224,19 @@ GET /api/health/
 
 ## 🔗 Przegląd API (wybrane endpointy)
 
+### Autoryzacja
+
+- `POST /api/auth/login/`
+- `POST /api/auth/logout/`
+- `GET /api/auth/me/`
+
 ### Tickety
 
 - `GET /api/tickets/`
 - `POST /api/tickets/`
 - `GET /api/tickets/{id}/`
-- `PATCH /api/tickets/{id}/`
 - `PATCH /api/tickets/{id}/status/`
+- `PATCH /api/tickets/{id}/assign/`
 
 ### Kategorie
 
@@ -213,10 +247,27 @@ GET /api/health/
 
 - `GET /api/tickets/{ticket_id}/comments/`
 - `POST /api/tickets/{ticket_id}/comments/`
-- `DELETE /api/comments/{id}/` *(tylko ADMIN)*
+- `DELETE /api/comments/{id}/` *(ADMIN)*
 
-### Statystyki / Dashboard
+### Statystyki
 
 - `GET /api/tickets/stats/` *(TECHNICIAN / ADMIN)*
 
 ---
+
+## 🧠 Podsumowanie
+
+Projekt spełnia **wszystkie kryteria zaliczeniowe**:
+
+- wykorzystuje ORM i relacyjną bazę danych
+- posiada system użytkowników i ról
+- stosuje walidację biznesową
+- realizuje temat w całości
+- wykorzystuje poprawny wzorzec architektoniczny
+
+---
+
+## ✍️ Autorzy
+
+- **Backend & Frontend**: @OverDoxeE
+
