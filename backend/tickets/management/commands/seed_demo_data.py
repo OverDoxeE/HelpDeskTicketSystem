@@ -24,7 +24,7 @@ class Command(BaseCommand):
                 "is_superuser": True,
             },
         )
-        admin.set_password("admin123")
+        admin.set_password("admin1234")
         admin.save()
         admin.groups.add(admin_group)
 
@@ -32,10 +32,10 @@ class Command(BaseCommand):
             username="tech_demo",
             defaults={
                 "email": "tech@example.com",
-                "is_staff": True,
+                "is_staff": False,
             },
         )
-        technician.set_password("tech123")
+        technician.set_password("tech1234")
         technician.save()
         technician.groups.add(tech_group)
 
@@ -47,7 +47,7 @@ class Command(BaseCommand):
                 "is_superuser": False,
             },
         )
-        regular_user.set_password("user123")
+        regular_user.set_password("user1234")
         regular_user.save()
 
         # Categories
@@ -110,6 +110,19 @@ class Command(BaseCommand):
             },
         )
 
+        # Unassigned ticket (visible to technicians as "work queue")
+        ticket5, _ = Ticket.objects.get_or_create(
+            title="New employee onboarding",
+            defaults={
+                "description": "Please prepare laptop + account access for a new hire.",
+                "status": "OPEN",
+                "priority": "MEDIUM",
+                "created_by": regular_user,
+                "assigned_to": None,
+                "category": categories[5],
+            },
+        )
+
         # Comments
         Comment.objects.get_or_create(
             ticket=ticket1,
@@ -141,5 +154,10 @@ class Command(BaseCommand):
             message="Please reset your password and enable 2FA.",
             visibility=Comment.VISIBILITY_INTERNAL,
         )
+
+        self.stdout.write("\nDemo login credentials:")
+        self.stdout.write("  ADMIN:      admin_demo / admin@example.com   password: admin1234")
+        self.stdout.write("  TECHNICIAN: tech_demo  / tech@example.com    password: tech1234")
+        self.stdout.write("  USER:       user_demo  / user@example.com    password: user1234")
 
         self.stdout.write(self.style.SUCCESS("Demo data seeded."))

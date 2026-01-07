@@ -10,6 +10,7 @@ venv/
 env/
 .venv/
 venv_win/
+venv-win/
 
 # Distribution / packaging
 build/

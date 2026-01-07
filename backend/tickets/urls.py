@@ -1,6 +1,8 @@
 from django.urls import path
 from .views import (
     HealthCheckView,
+    UserListCreateAPIView,
+    UserRetrieveUpdateDestroyAPIView,
     TicketListCreateAPIView,
     TicketRetrieveUpdateDestroyAPIView,
     TicketChangeStatusAPIView,
@@ -24,7 +26,11 @@ urlpatterns = [
     path("auth/me/", MeView.as_view(), name="api-me"),
     path("auth/logout/", LogoutView.as_view(), name="api-logout"),
 
-    # users
+    # users (admin management)
+    path("users/", UserListCreateAPIView.as_view(), name="user-list-create"),
+    path("users/<int:pk>/", UserRetrieveUpdateDestroyAPIView.as_view(), name="user-detail"),
+
+    # users (support utility)
     path("users/technicians/", TechnicianListAPIView.as_view(), name="technician-list"),
 
     # tickets
