@@ -64,7 +64,7 @@ System obsługuje **trzy role**, których działanie jest odczuwalne w aplikacji
 | Rola | Uprawnienia |
 |-----|-------------|
 | **USER** | Tworzy tickety, widzi tylko własne zgłoszenia, dodaje publiczne komentarze |
-| **TECHNICIAN** | Widzi wszystkie tickety, może je przypisywać, zmieniać status, widzi komentarze wewnętrzne |
+| **TECHNICIAN** | Widzi tylko tickety **Unassigned** oraz tickety **przypisane do siebie**. Może zmieniać status, przypisać ticket **do siebie**, dodawać komentarze wewnętrzne. **Nie może usuwać ticketów.** |
 | **ADMIN** | Pełny dostęp: użytkownicy, kategorie, tickety, usuwanie komentarzy |
 
 Uprawnienia realizowane są przy użyciu:
