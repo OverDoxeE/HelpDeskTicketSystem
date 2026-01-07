@@ -203,23 +203,11 @@ Tworzy przykładowych użytkowników, kategorie, tickety i komentarze.
 ---
 tworzone są przykładowe konta użytkowników wraz z przypisanymi rolami:
 
-🔹 Administrator
+**Dane logowania (demo):**
 
-Email: admin@example.com
-
-Hasło: admin123
-
-🔹 Technik IT
-
-Email: tech@example.com
-
-Hasło: tech123
-
-🔹 Zwykły użytkownik
-
-Email: user@example.com
-
-Hasło: user123
+-  **ADMIN**: `admin_demo` / `admin@example.com` — hasło: `admin1234`
+-  **TECHNICIAN**: `tech_demo` / `tech@example.com` — hasło: `tech1234`
+-  **USER**: `user_demo` / `user@example.com` — hasło: `user1234`
 
 ---
 
