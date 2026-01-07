@@ -29,7 +29,9 @@ class LoginView(APIView):
     authentication_classes = []
 
     def post(self, request):
-        email = request.data.get("email")
+        # The frontend uses a single input field. Historically it was named
+        # "email", but we allow it to be either an email OR a username.
+        identifier = request.data.get("email")
         username = request.data.get("username")
         password = request.data.get("password")
 
@@ -38,15 +40,12 @@ class LoginView(APIView):
                 {"detail": "Missing password"}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        if email and not username:
-            try:
-                user_obj = User.objects.get(email=email)
-                username = user_obj.get_username()
-            except User.DoesNotExist:
-                return Response(
-                    {"detail": "Invalid credentials"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+        # If username not provided explicitly, try to resolve identifier:
+        # 1) match by email
+        # 2) fall back to treating identifier as username
+        if not username and identifier:
+            user_obj = User.objects.filter(email__iexact=identifier).first()
+            username = user_obj.get_username() if user_obj else identifier
 
         if not username:
             return Response(

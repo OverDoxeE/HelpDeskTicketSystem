@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 
 from .models import Category, Ticket, Comment
-from .permissions import is_support_or_admin
+from .permissions import is_support_or_admin, get_user_role
 
 class UserBriefSerializer(serializers.ModelSerializer):
     class Meta:
@@ -72,7 +72,6 @@ class TicketSerializer(serializers.ModelSerializer):
         return value
 
     def validate_status(self, value):
-        # Block reopening closed tickets
         if self.instance is not None:
             if self.instance.status == "CLOSED" and value != "CLOSED":
                 raise ValidationError("Closed ticket cannot be reopened.")
@@ -108,3 +107,91 @@ class CommentSerializer(serializers.ModelSerializer):
         if len(value.strip()) < 3:
             raise ValidationError("Comment message is too short.")
         return value
+
+
+class AdminUserSerializer(serializers.ModelSerializer):
+
+    ROLE_CHOICES = (
+        ("USER", "USER"),
+        ("TECHNICIAN", "TECHNICIAN"),
+        ("ADMIN", "ADMIN"),
+    )
+
+    class RoleField(serializers.Field):
+
+        def to_representation(self, user_obj):
+            return get_user_role(user_obj)
+
+        def to_internal_value(self, data):
+            value = (str(data or "").upper()).strip()
+            if value not in {"USER", "TECHNICIAN", "ADMIN"}:
+                raise ValidationError("Invalid role.")
+            return {"role": value}
+
+    role = RoleField(source='*')
+    password = serializers.CharField(write_only=True, required=False, allow_blank=False)
+
+    class Meta:
+        model = get_user_model()
+        fields = ["id", "username", "email", "role", "is_active", "password"]
+        read_only_fields = ["id"]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data.pop("password", None)
+        return data
+
+    def _set_role(self, user_obj, role: str):
+        from django.contrib.auth.models import Group
+
+        if user_obj.is_superuser and role != "ADMIN":
+            raise ValidationError("Superuser must remain ADMIN.")
+
+        tech_group, _ = Group.objects.get_or_create(name="TECHNICIAN")
+        admin_group, _ = Group.objects.get_or_create(name="ADMIN")
+
+        user_obj.groups.remove(tech_group)
+        user_obj.groups.remove(admin_group)
+
+        if role == "TECHNICIAN":
+            user_obj.groups.add(tech_group)
+            user_obj.is_staff = False
+        elif role == "ADMIN":
+            user_obj.groups.add(admin_group)
+            user_obj.is_staff = True if not user_obj.is_superuser else user_obj.is_staff
+        else:
+            user_obj.is_staff = False
+
+    
+    def create(self, validated_data):
+        role = validated_data.pop("role", "USER")
+        password = validated_data.pop("password", None)
+
+        if not password:
+            raise ValidationError({"password": "Password is required."})
+
+        user_obj = self.Meta.model(**validated_data)
+        user_obj.set_password(password)
+
+        user_obj.save()
+
+        self._set_role(user_obj, role)
+        user_obj.save()
+
+        return user_obj
+
+    def update(self, instance, validated_data):
+        role = validated_data.pop("role", None)
+        password = validated_data.pop("password", None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        if password:
+            instance.set_password(password)
+
+        if role is not None:
+            self._set_role(instance, role)
+
+        instance.save()
+        return instance
