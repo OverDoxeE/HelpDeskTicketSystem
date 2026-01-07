@@ -314,5 +314,5 @@ Projekt spełnia **wszystkie kryteria zaliczeniowe**:
 
 - **Frontend**: @OverDoxeE
 - **Backend**: @GregorySVD
-(Formatowanie i poprawki składniowe README wykonane przy pomocy LLM OpenAi) 
+- (Formatowanie i poprawki składniowe README wykonane przy pomocy LLM OpenAi) 
 
