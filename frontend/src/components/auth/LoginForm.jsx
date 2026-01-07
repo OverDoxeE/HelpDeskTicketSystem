@@ -21,7 +21,7 @@ function LoginForm({ onSubmit, loading = false, disabled = false }) {
 
   const validate = (vals) => {
     const errs = {};
-    if (!vals.email) errs.email = "Email is required";
+    if (!vals.email) errs.email = "Username or email is required";
     if (!vals.password) errs.password = "Password is required";
     return errs;
   };
@@ -55,9 +55,9 @@ function LoginForm({ onSubmit, loading = false, disabled = false }) {
       autoComplete="off"
     >
       <TextField
-        label="Email"
+        label="Username or email"
         name="email"
-        type="email"
+        type="text"
         value={values.email}
         onChange={handleChange}
         onBlur={handleBlur}
