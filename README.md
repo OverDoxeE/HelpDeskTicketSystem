@@ -210,6 +210,40 @@ tworzone są przykładowe konta użytkowników wraz z przypisanymi rolami:
 -  **USER**: `user_demo` / `user@example.com` — hasło: `user1234`
 
 ---
+Jak uruchomić FRONTEND na nowym sprzęcie
+
+### 1️⃣ Przejdź do katalogu projektu
+
+```bash
+cd HelpDeskTicketSystem
+```
+
+### 2️⃣ Wejdź do folderu frontend
+
+```bash
+cd frontend
+```
+
+### 3️⃣ Zainstaluj zależności
+
+Jeśli masz **Node.js + npm**:
+
+```bash
+npm install
+```
+
+> Jeśli ktoś nie ma Node.js → trzeba zainstalować:
+> [https://nodejs.org/](https://nodejs.org/)
+> (wersja LTS wystarczy)
+
+---
+
+### 4️⃣ Uruchom projekt
+
+```bash
+npm run dev
+```
+
 
 ### 7️⃣ Uruchomienie serwera
 
