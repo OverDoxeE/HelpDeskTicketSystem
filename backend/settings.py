@@ -72,12 +72,24 @@ TIME_ZONE = "Europe/Warsaw"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+# --- STATIC (Vite build -> frontend_dist) ---
+STATIC_URL = "/static/"
+FRONTEND_DIST_DIR = BASE_DIR / "frontend_dist"
+
+# Django będzie serwował /static/* z folderu frontend_dist (w DEBUG)
+STATICFILES_DIRS = [
+    FRONTEND_DIST_DIR,
+]
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# CORS: przy serwowaniu frontu z Django zwykle nie jest potrzebne,
+# ale zostawiamy też dev-origin (5173) + backend (8000)
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
 ]
 
 REST_FRAMEWORK = {
